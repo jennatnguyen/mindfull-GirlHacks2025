@@ -1,7 +1,7 @@
 {
   "name": "mindfull",
   "version": "1.0.0",
-  "main": "index.ts",
+  "main": "App.tsx",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
+    "babel-preset-expo": "~54.0.0",
     "typescript": "~5.9.2"
   },
   "private": true
