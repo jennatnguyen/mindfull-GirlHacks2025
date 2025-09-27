@@ -49,9 +49,6 @@ npm install -g @expo/cli eas-cli
 
 ### 2. Start Development
 ```bash
-# Login to Expo (use your own account)
-npx expo login
-
 # Start the development server
 npx expo start --tunnel
 
