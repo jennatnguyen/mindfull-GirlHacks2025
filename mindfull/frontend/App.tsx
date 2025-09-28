@@ -34,12 +34,12 @@ const motivationalImages = [
 
 // Array of motivational quotes
 const motivationalQuotes = [
-  "You're doing great! Keep up the healthy habits! 🌟",
-  "Take it one meal, one pill, one moment at a time 💊",
-  "Self-care isn't selfish, it's essential 🧘‍♀️",
-  "Progress, not perfection. You've got this! 💪",
-  "Your health is your wealth 💎",
-  "Small steps lead to big changes 🌱",
+  "You're doing great! Keep up the healthy habits!",
+  "Take it one meal, one pill, one moment at a time",
+  "Self-care isn't selfish, it's essential",
+  "Progress, not perfection. You've got this!",
+  "Your health is your wealth",
+  "Small steps lead to big changes",
 ];
 
 export default function App() {
@@ -419,14 +419,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    paddingTop: 50, // Account for status bar
-    backgroundColor: colors.background,
-  },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -479,20 +471,33 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontWeight: '500',
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    paddingTop: 50,
+    paddingBottom: 4, // Minimal bottom padding
+    backgroundColor: colors.background,
+  },
+
   homeContainer: {
     flex: 1,
     padding: 20,
+    paddingTop: 4, // Minimal top padding
   },
+
   welcomeSection: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
+    marginTop: -4, // Slight negative margin to pull up
   },
   welcomeTitle: {
-    fontSize: 28,
+    fontSize: 34,
     fontWeight: 'bold',
     color: colors.text,
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 15,
   },
   welcomeHighlight: {
     color: colors.primary,
@@ -503,6 +508,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
     lineHeight: 22,
+    marginBottom: 20,
   },
   motivationalCard: {
     backgroundColor: colors.cardBg,
