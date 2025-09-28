@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const supabase = require('../services/supabaseClient');
 const { generateRecipes } = require('./recipeGenerator');
+const path = require('path');
+// Always load the root .env (mindfull/.env), regardless of where we run from
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
+// Uses the helper you already tested in backend/services/geminiClient.js
+const { askGemini } = require('../services/geminiClient');
 
 // ------------------------ RECIPES CRUD ------------------------------
 
@@ -11,9 +16,11 @@ router.post('/', async (req, res) => {
   if (!name || !user_id) {
     return res.status(400).json({ error: 'Name and user_id are required' });
   }
+
   try {
-    // TEMP: Mock Gemini response for testing
-    const instructions = '1. Prep your ingredients.\n2. Cook everything in a pan.\n3. Serve and enjoy!';
+    // Ask Gemini for concise, numbered steps. Save the results into the table.
+    const prompt = `Write concise, numbered cooking instructions for a recipe titled "${name}". Keep it short (3-10 steps).`;
+    let instructions = await askGemini(prompt);
 
     const { data, error } = await supabase
       .from('recipes')
@@ -104,9 +111,26 @@ router.post('/grocery-list', async (req, res) => {
       return res.status(500).json({ error: 'Failed to fetch ingredients' });
     }
 
-    // 2. Mock Gemini API call to generate grocery list from ingredients
-    // In real use, send the ingredients array to Gemini and get a formatted grocery list
-    const groceryListText = 'Grocery List:\n' + ingredients.map(i => `- ${i.name} (${i.quantity || '1'})`).join('\n');
+    // 2. Ask Gemini to generate a formatted grocery list from ingredients
+    // Build a short prompt listing the ingredients and ask Gemini to return a concise grocery list. //Include how many of each ingrediant should be bought.
+    const prompt = `Given these ingredients, produce a concise grocery list with one item per line. Include quantities if present.\n\nIngredients:\n${ingredients
+      .map(i => `- ${i.quantity || '1'} ${i.name}`)
+      .join('\n')}\n\nReturn only the list, no extra commentary.`;
+    let groceryListText;
+    try {
+      const geminiResp = await askGemini(prompt);
+      groceryListText = (geminiResp || '').toString().trim();
+      if (!groceryListText) {
+        // fallback to simple generated text if Gemini returned nothing
+        groceryListText = 'Grocery List:\n' + ingredients.map(i => `- ${i.name} (${i.quantity || '1'})`).join('\n');
+      }
+    } catch (gErr) {
+      console.error('Gemini error generating grocery list:', gErr);
+      // fallback: simple generated text using ingredients from DB
+      groceryListText = 'Grocery List:\n' + ingredients.map(i => `- ${i.name} (${i.quantity || '1'})`).join('\n');
+    }
+
+    // Keep a structured JSON version based on DB ingredients (Gemini text is stored as human-readable)
     const list_json = {
       items: ingredients.map(i => ({ name: i.name, quantity: i.quantity || '1' }))
     };
