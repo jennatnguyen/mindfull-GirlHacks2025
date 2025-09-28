@@ -9,6 +9,7 @@ import {
   Alert,
   StyleSheet,
 } from 'react-native';
+import { colors } from '../theme';
 
 export type Medication = {
   id: string;
@@ -20,7 +21,7 @@ export type Medication = {
   pillsRemaining: number;
 };
 
-export function MindfullMedicationScreen() {
+export function MedicationScreen() {
   const [medications, setMedications] = useState<Medication[]>([
     {
       id: '1',
@@ -203,37 +204,36 @@ export function MindfullMedicationScreen() {
   );
 }
 
-export default MindfullMedicationScreen;
 
 const styles = StyleSheet.create({
-  container: { padding: 16, paddingBottom: 40 },
+  container: { padding: 16, paddingBottom: 40, backgroundColor: colors.background },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  title: { fontSize: 20, fontWeight: '700' },
-  addBtn: { backgroundColor: '#111827', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
+  title: { fontSize: 20, fontWeight: '700', color: colors.text },
+  addBtn: { backgroundColor: colors.text, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
   addBtnText: { color: 'white' },
-  alert: { backgroundColor: '#FEF3C7', padding: 10, borderRadius: 8, marginBottom: 12 },
-  alertText: { color: '#92400E' },
-  card: { padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 8, backgroundColor: 'white' },
-  cardTitle: { fontWeight: '700', marginBottom: 8 },
-  muted: { color: '#6B7280', marginTop: 4 },
-  smallMuted: { color: '#6B7280', fontSize: 12, marginTop: 4 },
+  alert: { backgroundColor: colors.warningLight, padding: 10, borderRadius: 8, marginBottom: 12 },
+  alertText: { color: colors.warningText },
+  card: { padding: 12, borderRadius: 8, borderWidth: 1, borderColor: colors.border, marginBottom: 8, backgroundColor: colors.cardBg },
+  cardTitle: { fontWeight: '700', marginBottom: 8, color: colors.text },
+  muted: { color: colors.muted, marginTop: 4 },
+  smallMuted: { color: colors.muted, fontSize: 12, marginTop: 4 },
   medRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 },
   medLeft: { flexDirection: 'row', alignItems: 'center' },
   medAvatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   medAvatarText: { color: 'white' },
   medPending: { backgroundColor: '#BFDBFE' },
-  medTaken: { backgroundColor: '#BBF7D0' },
-  medName: { fontWeight: '600' },
-  badge: { backgroundColor: '#F3F4F6', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, marginBottom: 6 },
-  badgeText: { fontSize: 12 },
-  takeBtn: { marginTop: 6, backgroundColor: '#111827', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
+  medTaken: { backgroundColor: colors.successLight },
+  medName: { fontWeight: '600', color: colors.text },
+  badge: { backgroundColor: colors.surface, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, marginBottom: 6 },
+  badgeText: { fontSize: 12, color: colors.text },
+  takeBtn: { marginTop: 6, backgroundColor: colors.text, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
   takeBtnText: { color: 'white' },
-  allMedRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+  allMedRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.surface },
   allMedLeft: { flexDirection: 'row', alignItems: 'center' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 16 },
-  modalContent: { backgroundColor: 'white', padding: 16, borderRadius: 8 },
-  modalTitle: { fontSize: 18, fontWeight: '700', marginBottom: 8 },
-  input: { borderWidth: 1, borderColor: '#E5E7EB', padding: 8, borderRadius: 6, marginTop: 6 },
-  cameraPlaceholder: { backgroundColor: '#F3F4F6', height: 140, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
-  btn: { padding: 10, borderRadius: 8, backgroundColor: '#111827', alignItems: 'center', justifyContent: 'center' },
+  modalContent: { backgroundColor: colors.cardBg, padding: 16, borderRadius: 8 },
+  modalTitle: { fontSize: 18, fontWeight: '700', marginBottom: 8, color: colors.text },
+  input: { borderWidth: 1, borderColor: colors.border, padding: 8, borderRadius: 6, marginTop: 6 },
+  cameraPlaceholder: { backgroundColor: colors.surface, height: 140, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
+  btn: { padding: 10, borderRadius: 8, backgroundColor: colors.text, alignItems: 'center', justifyContent: 'center' },
 });
