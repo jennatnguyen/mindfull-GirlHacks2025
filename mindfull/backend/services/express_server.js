@@ -12,10 +12,8 @@ app.use(express.json({ limit: '100kb' }));
 app.use(morgan('tiny'));
 
 // mount routes
-app.use('/api/recipes', require('./routes/recipes'));
-app.use('/api/medications', require('./routes/medications'));
-app.use('/api/medication-schedules', require('./routes/schedules'));
-app.use('/api/medication-logs', require('./routes/logs'));
+app.use('/api/recipes', require('../routes/recipes'));
+app.use('/api/medications', require('../routes/medicine'));
 
 // generic error handler
 app.use((err, req, res, next) => {

@@ -13,7 +13,7 @@ router.get('/:userId', async (req, res) => {
 	
 	if (error) {
 		console.error('Supabase error:', error);
-		return res.status(500).json({error: 'Failed to fetch meals'});
+		return res.status(500).json({error: 'Failed to fetch medications'});
 	}
 	res.json({ medications: data });
 	}
@@ -24,7 +24,7 @@ router.get('/:userId', async (req, res) => {
 });
 
 // Get scheduled time for a medication
-router.get('/:userId', async (req, res) => {
+router.get('/schedules/:userId', async (req, res) => {
 	const { userId } = req.params;
 	try{
 	const{ data, error } = await supabase
@@ -44,8 +44,8 @@ router.get('/:userId', async (req, res) => {
 	}
 })
 
-// GET /api/medication-logs/:userId (get adherence history)
-router.get('/:userId', async (req, res) => {
+// GET /api/medications/logs/:userId (get adherence history)
+router.get('/logs/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
 
@@ -53,10 +53,10 @@ router.get('/:userId', async (req, res) => {
             .from('medication_logs')
             .select(`
                 *,
-                medications (name, dosage)
+                medications (name, dose)
             `)
             .eq('user_id', userId)
-            .order('taken_at', { ascending: false });
+            .order('taken_time', { ascending: false });
 
         if (error) throw error;
 
@@ -96,7 +96,7 @@ router.post('/', async (req, res) => {
 });
 
 // POST medication skip
-router.post('/', async (req, res) => {	
+router.post('/logs', async (req, res) => {	
 	const status = 'skipped';
 	try {
 	const { user_id, medication_id, scheduled_time, reason } = req.body;
@@ -128,18 +128,24 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, dosage, frequency, instructions } = req.body;
+        const { user_id, name, dose, description, color, shape } = req.body;
+
+		/*
+        if (!user_id) {
+            return res.status(400).json({ error: 'user_id is required' });
+        }*/
 
         const { data, error } = await supabase
             .from('medications')
-            .update({ name, dosage, frequency, instructions })
+            .update({ name, dose, description, color, shape })
             .eq('id', id)
+            //.eq('user_id', user_id)  // Only update if user owns it
             .select();
 
         if (error) throw error;
 
         if (data.length === 0) {
-            return res.status(404).json({ error: 'Medication not found' });
+            return res.status(404).json({ error: 'Medication not found or access denied' });
         }
 
         res.json({ 
@@ -151,15 +157,20 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// DELETE /api/medications/:id (remove medication)
 router.delete('/:id', async (req, res) => {
     try {
         const { id } = req.params;
+        //const { user_id } = req.body;
+
+        //if (!user_id) {
+          //  return res.status(400).json({ error: 'user_id is required' });
+        //}
 
         const { error } = await supabase
             .from('medications')
             .delete()
-            .eq('id', id);
+            .eq('id', id)
+            //.eq('user_id', user_id);  // Only delete if user owns it
 
         if (error) throw error;
 
@@ -170,11 +181,11 @@ router.delete('/:id', async (req, res) => {
 });
 
 // POST /api/medication-schedules (set reminder times)
-router.post('/', async (req, res) => {
+router.post('/schedule', async (req, res) => {
     try {
-        const { medication_id, reminder_time, days_of_week } = req.body;
+        const {medication_id, user_id, scheduled_time } = req.body;
 
-        if (!medication_id || !reminder_time) {
+        if (!scheduled_time || !medication_id) {
             return res.status(400).json({ 
                 error: 'Missing required fields: medication_id, reminder_time' 
             });
@@ -182,7 +193,7 @@ router.post('/', async (req, res) => {
 
         const { data, error } = await supabase
             .from('medication_schedules')
-            .insert([{ medication_id, reminder_time, days_of_week }])
+            .insert([{ medication_id, user_id, scheduled_time }])
             .select();
 
         if (error) throw error;
