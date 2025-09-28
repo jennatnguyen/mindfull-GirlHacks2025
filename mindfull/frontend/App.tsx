@@ -4,9 +4,9 @@ import { StatusBar } from 'expo-status-bar';
 import { colors } from './theme';
 // Use the CommonJS build of lucide-react-native to avoid Metro ESM resolution issues
 // @ts-ignore: package does not ship typings for the dist/cjs entry; runtime is fine
-import { Home, Pill, Utensils, Brain, Heart, Settings, Clock, BookOpen } from 'lucide-react-native/dist/cjs/lucide-react-native.js';
-import MindfullMealPlannerScreen from './components/MindfullMealPlannerScreen';
-import MindfullMedicationScreen from './components/MindfullMedicationScreen';
+import { Home, Pill, Utensils, Brain, Heart, Settings, Clock, BookOpen } from 'lucide-react-native';
+import { CookbookScreen } from './components/CookbookScreen';
+import { MedicationScreen } from './components/MedicationScreen';
 
 // Dummy Button and Badge components for demonstration
 const Button = ({ onPress, children }: { onPress: () => void; children: React.ReactNode }) => (
@@ -75,9 +75,9 @@ export default function App() {
           />
         );
       case 'meals':
-        return <MindfullMealPlannerScreen />;
+        return <CookbookScreen />;
       case 'meds':
-        return <MindfullMedicationScreen />;
+        return <MedicationScreen />;
     }
   };
 
