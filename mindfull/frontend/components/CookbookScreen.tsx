@@ -64,6 +64,8 @@ const categoryColors = {
     egg: '#eab308',
     grain: '#a855f7',
 };
+import { fetchUserRecipes } from '../utils/apiHelpersRecipe'; // <-- Import your helper
+import { supabase } from '../utils/supabase'; // <-- Import your supabase client
 
 export function CookbookScreen() {
     const [activeTab, setActiveTab] = useState<TabType>('cookbook');
@@ -73,6 +75,43 @@ export function CookbookScreen() {
     const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
     const screenWidth = Dimensions.get('window').width;
     const translateX = useRef(new Animated.Value(screenWidth)).current;
+    const [recipes, setRecipes] = useState<Recipe[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    // Fetch user ID from Supabase Auth
+    const [userId, setUserId] = useState<string | null>(null);
+
+    useEffect(() => {
+        supabase.auth.getUser().then(({ data, error }) => {
+            if (data?.user) {
+                setUserId(data.user.id);
+            console.log('Set userId:', data.user.id); // <-- Add this
+        } else {
+            console.log('No user found', error);
+        }
+        });
+    }, []);
+
+    useEffect(() => {
+        console.log('CookbookScreen useEffect, userId:', userId);
+        if (!userId) return;
+        setLoading(true);
+        fetchUserRecipes(userId)
+            .then(data => {
+                console.log('API data:', data);
+                const mappedRecipes = (data.recipes || []).map((r: any) => ({
+                    ...r,
+                    category: r.type,
+                }));
+                console.log('Mapped recipes:', mappedRecipes);
+                setRecipes(mappedRecipes);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error('Fetch error:', err);
+                setLoading(false);
+            });
+    }, [userId]);
 
     // When a recipe is selected, slide the detail in from the right
     useEffect(() => {
@@ -95,176 +134,6 @@ export function CookbookScreen() {
             useNativeDriver: true,
         }).start(() => setSelectedRecipe(null));
     };
-    const [recipes, setRecipes] = useState<Recipe[]>([
-        // Meat recipes
-        {
-            id: '1',
-            name: 'Mongolian Beef',
-            category: 'meat',
-            cookTime: '30 min',
-            servings: 4,
-            difficulty: 'medium',
-            ingredients: ['Beef strips', 'Onions', 'Soy sauce', 'Brown sugar', 'Garlic'],
-            instructions: ['Marinate beef', 'Stir fry with onions', 'Add sauce', 'Serve hot']
-        },
-        {
-            id: '2',
-            name: 'BBQ Chicken',
-            category: 'meat',
-            cookTime: '40 min',
-            servings: 6,
-            difficulty: 'easy',
-            ingredients: ['Chicken thighs', 'BBQ sauce', 'Onion powder', 'Paprika', 'Salt'],
-            instructions: ['Season chicken', 'Grill 15 min each side', 'Brush with BBQ sauce']
-        },
-        // Sweet recipes
-        {
-            id: '3',
-            name: 'Chocolate Cake',
-            category: 'sweet',
-            cookTime: '45 min',
-            servings: 8,
-            difficulty: 'medium',
-            ingredients: ['Flour', 'Cocoa powder', 'Sugar', 'Eggs', 'Butter'],
-            instructions: ['Mix dry ingredients', 'Add wet ingredients', 'Bake at 350°F']
-        },
-        {
-            id: '4',
-            name: 'Banana Bread',
-            category: 'sweet',
-            cookTime: '60 min',
-            servings: 10,
-            difficulty: 'easy',
-            ingredients: ['Ripe bananas', 'Flour', 'Sugar', 'Eggs', 'Baking soda'],
-            instructions: ['Mash bananas', 'Mix all ingredients', 'Bake 60 minutes']
-        },
-        // Vegetarian recipes
-        {
-            id: '5',
-            name: 'Caesar Salad',
-            category: 'vegetarian',
-            cookTime: '15 min',
-            servings: 2,
-            difficulty: 'easy',
-            ingredients: ['Romaine lettuce', 'Parmesan cheese', 'Croutons', 'Caesar dressing'],
-            instructions: ['Wash lettuce', 'Add dressing', 'Top with cheese and croutons']
-        },
-        {
-            id: '6',
-            name: 'Caprese Pasta',
-            category: 'vegetarian',
-            cookTime: '25 min',
-            servings: 4,
-            difficulty: 'easy',
-            ingredients: ['Pasta', 'Fresh mozzarella', 'Cherry tomatoes', 'Basil', 'Olive oil'],
-            instructions: ['Cook pasta', 'Add tomatoes and mozzarella', 'Toss with basil']
-        },
-        // Vegan recipes
-        {
-            id: '7',
-            name: 'Quinoa Bowl',
-            category: 'vegan',
-            cookTime: '20 min',
-            servings: 2,
-            difficulty: 'easy',
-            ingredients: ['Quinoa', 'Black beans', 'Avocado', 'Corn', 'Lime'],
-            instructions: ['Cook quinoa', 'Mix with beans and corn', 'Top with avocado']
-        },
-        {
-            id: '8',
-            name: 'Lentil Curry',
-            category: 'vegan',
-            cookTime: '35 min',
-            servings: 4,
-            difficulty: 'medium',
-            ingredients: ['Red lentils', 'Coconut milk', 'Curry powder', 'Onions', 'Tomatoes'],
-            instructions: ['Sauté onions', 'Add lentils and spices', 'Simmer with coconut milk']
-        },
-        // Seafood recipes
-        {
-            id: '9',
-            name: 'Grilled Salmon',
-            category: 'seafood',
-            cookTime: '20 min',
-            servings: 2,
-            difficulty: 'easy',
-            ingredients: ['Salmon fillets', 'Lemon', 'Olive oil', 'Salt', 'Pepper'],
-            instructions: ['Season salmon', 'Grill 6 minutes each side', 'Serve with lemon']
-        },
-        {
-            id: '10',
-            name: 'Shrimp Scampi',
-            category: 'seafood',
-            cookTime: '15 min',
-            servings: 3,
-            difficulty: 'medium',
-            ingredients: ['Shrimp', 'Garlic', 'White wine', 'Butter', 'Pasta'],
-            instructions: ['Sauté garlic', 'Add shrimp and wine', 'Toss with pasta']
-        },
-        // Fruit recipes
-        {
-            id: '11',
-            name: 'Berry Smoothie',
-            category: 'fruit',
-            cookTime: '5 min',
-            servings: 1,
-            difficulty: 'easy',
-            ingredients: ['Mixed berries', 'Banana', 'Yogurt', 'Honey', 'Ice'],
-            instructions: ['Blend all ingredients', 'Serve immediately']
-        },
-        {
-            id: '12',
-            name: 'Apple Crisp',
-            category: 'fruit',
-            cookTime: '50 min',
-            servings: 6,
-            difficulty: 'easy',
-            ingredients: ['Apples', 'Oats', 'Brown sugar', 'Butter', 'Cinnamon'],
-            instructions: ['Slice apples', 'Mix topping', 'Bake 45 minutes']
-        },
-        // Egg recipes
-        {
-            id: '13',
-            name: 'Scrambled Eggs',
-            category: 'egg',
-            cookTime: '5 min',
-            servings: 2,
-            difficulty: 'easy',
-            ingredients: ['Eggs', 'Butter', 'Salt', 'Pepper', 'Chives'],
-            instructions: ['Beat eggs', 'Cook low and slow', 'Garnish with chives']
-        },
-        {
-            id: '14',
-            name: 'Egg Benedict',
-            category: 'egg',
-            cookTime: '25 min',
-            servings: 2,
-            difficulty: 'hard',
-            ingredients: ['English muffins', 'Eggs', 'Ham', 'Hollandaise sauce', 'Paprika'],
-            instructions: ['Poach eggs', 'Toast muffins', 'Assemble with ham and sauce']
-        },
-        // Grain recipes
-        {
-            id: '15',
-            name: 'Garlic Bread',
-            category: 'grain',
-            cookTime: '15 min',
-            servings: 4,
-            difficulty: 'easy',
-            ingredients: ['Baguette', 'Garlic', 'Butter', 'Parsley', 'Parmesan'],
-            instructions: ['Mix garlic butter', 'Spread on bread', 'Bake until golden']
-        },
-        {
-            id: '16',
-            name: 'French Toast',
-            category: 'grain',
-            cookTime: '20 min',
-            servings: 4,
-            difficulty: 'easy',
-            ingredients: ['Thick bread', 'Eggs', 'Milk', 'Vanilla', 'Cinnamon'],
-            instructions: ['Make custard', 'Dip bread', 'Cook until golden brown']
-        }
-    ]);
 
     // Filter recipes based on selected categories
     const filteredRecipes = selectedCategories.length === 0
@@ -518,7 +387,7 @@ export function CookbookScreen() {
                     ]}
                     pointerEvents="box-none"
                 >
-                    <RecipeDetailScreen recipe={selectedRecipe} onBack={handleCloseDetail} />
+                    <RecipeDetailScreen recipeId={selectedRecipe.id} onBack={handleCloseDetail} />
                 </Animated.View>
             )}
         </View>
