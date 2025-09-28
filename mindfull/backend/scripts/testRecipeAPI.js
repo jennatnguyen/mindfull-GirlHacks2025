@@ -7,7 +7,7 @@ const BASE_URL = (process.env.BASE_URL || 'http://127.0.0.1:3000') + '/api/recip
 
 async function testRecipeGeneration() {
   try {
-    console.log('🧪 Testing Recipe Generation API...\n');
+  console.log('Testing Recipe Generation API...\n');
 
     // Test 1: Generate recipes
     console.log('1. Testing recipe generation...');
@@ -16,13 +16,13 @@ async function testRecipeGeneration() {
     });
 
     if (generateResponse.data.success) {
-      console.log('✅ Recipe generation successful!');
+  console.log('Recipe generation successful!');
       console.log(`Generated ${generateResponse.data.data.recipes.length} recipes`);
       console.log('First recipe title:', generateResponse.data.data.recipes[0].title);
       // Print the full first recipe JSON for inspection
       console.log('First recipe (full):\n', JSON.stringify(generateResponse.data.data.recipes[0], null, 2));
     } else {
-      console.log('❌ Recipe generation failed:', generateResponse.data.error);
+  console.log('Recipe generation failed:', generateResponse.data.error);
     }
 
     console.log('\n2. Testing with invalid input...');
@@ -34,9 +34,9 @@ async function testRecipeGeneration() {
       });
     } catch (error) {
       if (error.response.status === 400) {
-        console.log('✅ Correctly rejected empty request');
+  console.log('Correctly rejected empty request');
       } else {
-        console.log('❌ Unexpected error:', error.response.data);
+  console.log('Unexpected error:', error.response.data);
       }
     }
 
@@ -52,30 +52,30 @@ async function testRecipeGeneration() {
         });
 
         if (saveResponse.data.success) {
-          console.log('✅ Recipe saved successfully!');
+          console.log('Recipe saved successfully!');
           
           // Test 4: Fetch saved recipes
           console.log('\n4. Testing fetch saved recipes...');
           const fetchResponse = await axios.get(`${BASE_URL}/saved/test-user-123`);
           
           if (fetchResponse.data.success) {
-            console.log('✅ Successfully fetched saved recipes');
+            console.log('Successfully fetched saved recipes');
             console.log(`Found ${fetchResponse.data.data.length} saved recipe(s)`);
           } else {
-            console.log('❌ Failed to fetch saved recipes:', fetchResponse.data.error);
+            console.log('Failed to fetch saved recipes:', fetchResponse.data.error);
           }
         } else {
-          console.log('❌ Recipe save failed:', saveResponse.data.error);
+          console.log('Recipe save failed:', saveResponse.data.error);
         }
       } catch (saveError) {
-        console.log('⚠️  Recipe save test skipped (likely no database connection):', saveError.message);
+  console.log('Warning: Recipe save test skipped (likely no database connection):', saveError.message);
       }
     }
 
-    console.log('\n🎉 API tests completed!');
+  console.log('\nAPI tests completed!');
 
   } catch (error) {
-    console.error('❌ Test failed:', error.message);
+  console.error('Test failed:', error.message);
     if (error.response) {
       console.error('Response:', error.response.data);
     }
@@ -92,7 +92,7 @@ async function testVariousRequests() {
     "a meal prep recipe for chicken and rice that serves 4 people"
   ];
 
-  console.log('\n🧪 Testing various recipe requests...\n');
+  console.log('\nTesting various recipe requests...\n');
 
   for (let i = 0; i < requests.length; i++) {
     try {
@@ -104,15 +104,15 @@ async function testVariousRequests() {
 
       if (response.data.success) {
         const recipes = response.data.data.recipes;
-        console.log(`   ✅ Generated ${recipes.length} recipes`);
+  console.log(`   Generated ${recipes.length} recipes`);
         // Print a compact sample title line followed by the full JSON for the first recipe
         console.log(`   📋 Sample: "${recipes[0].title}" (${recipes[0].total_time_minutes} min)`);
         console.log('   📋 Sample (full):\n', JSON.stringify(recipes[0], null, 2));
       } else {
-        console.log(`   ❌ Failed: ${response.data.error}`);
+  console.log(`   Failed: ${response.data.error}`);
       }
     } catch (error) {
-      console.log(`   ❌ Error: ${error.message}`);
+  console.log(`   Error: ${error.message}`);
     }
     
     // Add delay to avoid rate limiting
