@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, AppRegistry, Image } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { colors } from './theme';
-// Use the CommonJS build of lucide-react-native to avoid Metro ESM resolution issues
-// @ts-ignore: package does not ship typings for the dist/cjs entry; runtime is fine
 import { Home, Pill, Utensils, Brain, Heart, Settings, Clock, BookOpen } from 'lucide-react-native';
 import { CookbookScreen } from './components/CookbookScreen';
 import { MedicationScreen } from './components/MedicationScreen';
@@ -11,7 +9,7 @@ import { MedicationScreen } from './components/MedicationScreen';
 // Dummy Button and Badge components for demonstration
 const Button = ({ onPress, children }: { onPress: () => void; children: React.ReactNode }) => (
   <TouchableOpacity onPress={onPress} style={styles.button}>
-    {children}
+    <Text style={styles.buttonText}>{children}</Text>
   </TouchableOpacity>
 );
 
@@ -42,7 +40,15 @@ const motivationalQuotes = [
 ];
 
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState<Screen>('home');
+  const [userName, setUserName] = useState(user?.email || 'User');
+
+  React.useEffect(() => {
+    if (user?.email) setUserName(user.email);
+  }, [user]);
+
+  if (!session) {
+    return <LoginScreen />;
+  }
   const [userName, setUserName] = useState('User');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [currentQuote, setCurrentQuote] = useState(motivationalQuotes[0]);
@@ -88,9 +94,16 @@ export default function App() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Mindfull</Text>
-        <Button onPress={() => { /* settings action */ }}>
-          <Settings size={20} color={colors.text} />
-        </Button>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Button onPress={() => { /* settings action */ }}>
+            <Settings size={20} color={colors.text}/>
+          </Button>
+          <Button onPress={signOut}>
+            Sign Out
+          </Button>
+        </View>
+
       </View>
 
       {/* Main Content */}
@@ -123,6 +136,93 @@ export default function App() {
   );
 }
 
+//---------------------------------------Login Screen---------------------------------------
+function LoginScreen() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [name, setName] = useState('');
+
+  const handleAuth = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      if (mode === 'login') {
+        await signIn(email, password);
+      } else {
+        // ✅ Pass the name along to signUp
+        await signUp(email, password, name);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Authentication failed');
+    }
+    setLoading(false);
+  };
+
+  return (
+    <View style={styles.loginContainer}>
+      <Text style={styles.headerTitle}>Mindfull</Text>
+      <Text style={styles.loginSubtitle}>
+        {mode === 'login' ? 'Sign In' : 'Sign Up'}
+      </Text>
+
+      {/* Email */}
+      <TextInput
+        style={styles.input}
+        placeholder="Email"
+        autoCapitalize="none"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+      />
+
+      {/* Password */}
+      <TextInput
+        style={styles.input}
+        placeholder="Password"
+        autoCapitalize="none"
+        secureTextEntry
+        value={password}
+        onChangeText={setPassword}
+      />
+
+      {/* Name field only on Sign Up */}
+      {mode === 'signup' && (
+        <TextInput
+          style={styles.input}
+          placeholder="Name"
+          autoCapitalize="words"
+          value={name}
+          onChangeText={setName}
+        />
+      )}
+
+      {/* Errors */}
+      {error && <Text style={styles.errorText}>{error}</Text>}
+
+      {/* Action button */}
+      <Button onPress={handleAuth}>
+        {loading ? 'Loading...' : mode === 'login' ? 'Sign In' : 'Sign Up'}
+      </Button>
+
+      {/* Toggle between login/signup */}
+      <TouchableOpacity
+        onPress={() => setMode(mode === 'login' ? 'signup' : 'login')}
+      >
+        <Text style={styles.switchText}>
+          {mode === 'login'
+            ? "Don't have an account? Sign Up"
+            : 'Already have an account? Sign In'}
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+//---------------------------------------Home Screen---------------------------------------
+
 function HomeScreen({
   userName,
   onNavigate,
@@ -134,6 +234,7 @@ function HomeScreen({
   currentImage: string;
   currentQuote: string;
 }) {
+
   return (
     <View style={styles.homeContainer}>
       {/* Welcome Section */}
@@ -230,12 +331,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.text,
   },
+  button: {
+    padding: 8,
+    backgroundColor: '#010c0bff',
+    //'#6366f1',
+    borderRadius: 6,
+    marginLeft: 8,
+  },
+  buttonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
   content: {
     flex: 1,
   },
-  button: {
-    padding: 8,
-  },
+
   badge: {
     backgroundColor: colors.surface,
     borderRadius: 12,
@@ -336,6 +446,53 @@ const styles = StyleSheet.create({
     color: colors.background,
     fontSize: 12,
     textAlign: 'center',
+  },
+  // ─────────────────────────────
+  // LOGIN SCREEN STYLING
+  // ─────────────────────────────
+  loginContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    backgroundColor: '#9db7ab', // pastel green/blue bg
+  },
+  loginSubtitle: {
+    fontSize: 22,
+    marginBottom: 16,
+    color: '#f1d797ff', // gold subtitle
+    fontWeight: 'bold',
+  },
+  input: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#c49a2f', // gold outline
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    fontSize: 16,
+    backgroundColor: '#ffffff',
+    color: '#1e1e1e',
+  },
+  errorText: {
+    color: '#d32f2f',
+    marginBottom: 8,
+  },
+  switchText: {
+    color: '#110c01ff', // black link
+    marginTop: 16,
+    textDecorationLine: 'underline',
+  },
+  // NEW: login-only button styles (don’t duplicate "button"/"buttonText")
+  loginButton: {
+    backgroundColor: '#c49a2f', // gold
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  loginButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
 
