@@ -8,6 +8,7 @@ import { MedicationScreen } from './components/MedicationScreen';
 import { useSession } from './utils/useSession';
 import { signIn, signUp, signOut, getSession as getAuthSession } from './utils/auth';
 
+
 // Dummy Button and Badge components for demonstration
 const Button = ({ onPress, children }: { onPress: () => void; children: React.ReactNode }) => (
   <TouchableOpacity onPress={onPress} style={styles.button}>
@@ -59,8 +60,10 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState('');
+
   // force UI into signed-out state until auth subscription fires
   const [forceSignedOut, setForceSignedOut] = useState(false);
+
 
   const handleAuth = async () => {
     setLoading(true);
@@ -77,6 +80,7 @@ export default function App() {
     setLoading(false);
   };
 
+  
   // Sign-out wrapper with error handling so button doesn't silently fail
   const handleSignOut = async () => {
     try {
@@ -116,6 +120,7 @@ export default function App() {
     else if (user?.email) setUserName(deriveNameFromEmail(user.email));
   }, [user]);
 
+
   // Change image every hour and quote every time (keep hooks above any early returns)
   useEffect(() => {
     const updateContent = () => {
@@ -131,6 +136,52 @@ export default function App() {
 
     return () => clearInterval(interval);
   }, []);
+
+  // If there is no session yet (not signed in) show a simple login/signup form in App
+  if (!session)
+    return (
+      <View style={styles.loginContainer}>
+        <Text style={styles.headerTitle}>Mindfull</Text>
+        <Text style={styles.loginSubtitle}>{mode === 'login' ? 'Sign In' : 'Sign Up'}</Text>
+
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          autoCapitalize="none"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          autoCapitalize="none"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
+
+        {mode === 'signup' && (
+          <TextInput
+            style={styles.input}
+            placeholder="Name"
+            autoCapitalize="words"
+            value={name}
+            onChangeText={setName}
+          />
+        )}
+
+        {error && <Text style={styles.errorText}>{error}</Text>}
+
+        <Button onPress={handleAuth}>{loading ? 'Loading...' : mode === 'login' ? 'Sign In' : 'Sign Up'}</Button>
+
+        <TouchableOpacity onPress={() => setMode(mode === 'login' ? 'signup' : 'login')}>
+          <Text style={styles.switchText}>{mode === 'login' ? "Don't have an account? Sign Up" : 'Already have an account? Sign In'}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+
 
   const renderScreen = () => {
     switch (currentScreen) {
@@ -248,6 +299,7 @@ export default function App() {
     </View>
   );
 }
+
 
 // --------------------------------------- Home Screen ---------------------------------------
 
