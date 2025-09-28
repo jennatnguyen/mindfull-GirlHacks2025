@@ -1,35 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import {
-    View,
-    Text,
-    ScrollView,
-    TouchableOpacity,
-    StyleSheet,
-    TextInput,
-    Pressable,
-    Alert,
-    Animated,
-    Dimensions,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Pressable, Alert, Animated, Dimensions, } from 'react-native';
 import { colors } from '../theme';
+import { recipeAPI } from '../utils/api';
 import RecipeDetailScreen from './RecipeDetailScreen';
-import { fetchUserRecipes } from '../utils/apiHelpersRecipe'; // <-- Import your helper
-import { supabase } from '../utils/supabase'; // <-- Import your supabase client
+import GroceryListScreen from './GroceryListScreen';
+import { supabase } from '../utils/supabase';
 
-import {
-    Search,
-    Beef,
-    CakeSlice,
-    Leaf,
-    Sprout,
-    Fish,
-    Apple,
-    Egg,
-    Wheat,
-    Plus,
-    ChefHat,
-    ShoppingCart
-} from 'lucide-react-native';
+import { Search, Beef, CakeSlice, Leaf, Sprout, Fish, Apple, Egg, Wheat, Plus, ChefHat, ShoppingCart } from 'lucide-react-native';
 
 export type Recipe = {
     id: string;
@@ -66,8 +43,177 @@ const categoryColors = {
     grain: '#a855f7',
 };
 
-
-
+// Hardcoded fallback recipes
+const fallbackRecipes: Recipe[] = [
+    // Meat recipes
+    {
+        id: 'fb1',
+        name: 'Mongolian Beef',
+        category: 'meat',
+        cookTime: '30 min',
+        servings: 4,
+        difficulty: 'medium',
+        ingredients: ['Beef strips', 'Onions', 'Soy sauce', 'Brown sugar', 'Garlic'],
+        instructions: ['Marinate beef', 'Stir fry with onions', 'Add sauce', 'Serve hot']
+    },
+    {
+        id: 'fb2',
+        name: 'BBQ Chicken',
+        category: 'meat',
+        cookTime: '40 min',
+        servings: 6,
+        difficulty: 'easy',
+        ingredients: ['Chicken thighs', 'BBQ sauce', 'Onion powder', 'Paprika', 'Salt'],
+        instructions: ['Season chicken', 'Grill 15 min each side', 'Brush with BBQ sauce']
+    },
+    // Sweet recipes
+    {
+        id: 'fb3',
+        name: 'Chocolate Cake',
+        category: 'sweet',
+        cookTime: '45 min',
+        servings: 8,
+        difficulty: 'medium',
+        ingredients: ['Flour', 'Cocoa powder', 'Sugar', 'Eggs', 'Butter'],
+        instructions: ['Mix dry ingredients', 'Add wet ingredients', 'Bake at 350°F']
+    },
+    {
+        id: 'fb4',
+        name: 'Banana Bread',
+        category: 'sweet',
+        cookTime: '60 min',
+        servings: 10,
+        difficulty: 'easy',
+        ingredients: ['Ripe bananas', 'Flour', 'Sugar', 'Eggs', 'Baking soda'],
+        instructions: ['Mash bananas', 'Mix all ingredients', 'Bake 60 minutes']
+    },
+    // Vegetarian recipes
+    {
+        id: 'fb5',
+        name: 'Caesar Salad',
+        category: 'vegetarian',
+        cookTime: '15 min',
+        servings: 2,
+        difficulty: 'easy',
+        ingredients: ['Romaine lettuce', 'Parmesan cheese', 'Croutons', 'Caesar dressing'],
+        instructions: ['Wash lettuce', 'Add dressing', 'Top with cheese and croutons']
+    },
+    {
+        id: 'fb6',
+        name: 'Caprese Pasta',
+        category: 'vegetarian',
+        cookTime: '25 min',
+        servings: 4,
+        difficulty: 'easy',
+        ingredients: ['Pasta', 'Fresh mozzarella', 'Cherry tomatoes', 'Basil', 'Olive oil'],
+        instructions: ['Cook pasta', 'Add tomatoes and mozzarella', 'Toss with basil']
+    },
+    // Vegan recipes
+    {
+        id: 'fb7',
+        name: 'Quinoa Bowl',
+        category: 'vegan',
+        cookTime: '20 min',
+        servings: 2,
+        difficulty: 'easy',
+        ingredients: ['Quinoa', 'Black beans', 'Avocado', 'Corn', 'Lime'],
+        instructions: ['Cook quinoa', 'Mix with beans and corn', 'Top with avocado']
+    },
+    {
+        id: 'fb8',
+        name: 'Lentil Curry',
+        category: 'vegan',
+        cookTime: '35 min',
+        servings: 4,
+        difficulty: 'medium',
+        ingredients: ['Red lentils', 'Coconut milk', 'Curry powder', 'Onions', 'Tomatoes'],
+        instructions: ['Sauté onions', 'Add lentils and spices', 'Simmer with coconut milk']
+    },
+    // Seafood recipes
+    {
+        id: 'fb9',
+        name: 'Grilled Salmon',
+        category: 'seafood',
+        cookTime: '20 min',
+        servings: 2,
+        difficulty: 'easy',
+        ingredients: ['Salmon fillets', 'Lemon', 'Olive oil', 'Salt', 'Pepper'],
+        instructions: ['Season salmon', 'Grill 6 minutes each side', 'Serve with lemon']
+    },
+    {
+        id: 'fb10',
+        name: 'Shrimp Scampi',
+        category: 'seafood',
+        cookTime: '15 min',
+        servings: 3,
+        difficulty: 'medium',
+        ingredients: ['Shrimp', 'Garlic', 'White wine', 'Butter', 'Pasta'],
+        instructions: ['Sauté garlic', 'Add shrimp and wine', 'Toss with pasta']
+    },
+    // Fruit recipes
+    {
+        id: 'fb11',
+        name: 'Berry Smoothie',
+        category: 'fruit',
+        cookTime: '5 min',
+        servings: 1,
+        difficulty: 'easy',
+        ingredients: ['Mixed berries', 'Banana', 'Yogurt', 'Honey', 'Ice'],
+        instructions: ['Blend all ingredients', 'Serve immediately']
+    },
+    {
+        id: 'fb12',
+        name: 'Apple Crisp',
+        category: 'fruit',
+        cookTime: '50 min',
+        servings: 6,
+        difficulty: 'easy',
+        ingredients: ['Apples', 'Oats', 'Brown sugar', 'Butter', 'Cinnamon'],
+        instructions: ['Slice apples', 'Mix topping', 'Bake 45 minutes']
+    },
+    // Egg recipes
+    {
+        id: 'fb13',
+        name: 'Scrambled Eggs',
+        category: 'egg',
+        cookTime: '5 min',
+        servings: 2,
+        difficulty: 'easy',
+        ingredients: ['Eggs', 'Butter', 'Salt', 'Pepper', 'Chives'],
+        instructions: ['Beat eggs', 'Cook low and slow', 'Garnish with chives']
+    },
+    {
+        id: 'fb14',
+        name: 'Egg Benedict',
+        category: 'egg',
+        cookTime: '25 min',
+        servings: 2,
+        difficulty: 'hard',
+        ingredients: ['English muffins', 'Eggs', 'Ham', 'Hollandaise sauce', 'Paprika'],
+        instructions: ['Poach eggs', 'Toast muffins', 'Assemble with ham and sauce']
+    },
+    // Grain recipes
+    {
+        id: 'fb15',
+        name: 'Garlic Bread',
+        category: 'grain',
+        cookTime: '15 min',
+        servings: 4,
+        difficulty: 'easy',
+        ingredients: ['Baguette', 'Garlic', 'Butter', 'Parsley', 'Parmesan'],
+        instructions: ['Mix garlic butter', 'Spread on bread', 'Bake until golden']
+    },
+    {
+        id: 'fb16',
+        name: 'French Toast',
+        category: 'grain',
+        cookTime: '20 min',
+        servings: 4,
+        difficulty: 'easy',
+        ingredients: ['Thick bread', 'Eggs', 'Milk', 'Vanilla', 'Cinnamon'],
+        instructions: ['Make custard', 'Dip bread', 'Cook until golden brown']
+    }
+];
 
 export function CookbookScreen() {
     const [activeTab, setActiveTab] = useState<TabType>('cookbook');
@@ -78,8 +224,11 @@ export function CookbookScreen() {
     const screenWidth = Dimensions.get('window').width;
     const translateX = useRef(new Animated.Value(screenWidth)).current;
 
-    const [recipes, setRecipes] = useState<Recipe[]>([]);
+    // Single recipes state - starts with fallback data, then gets replaced by API data
+    const [recipes, setRecipes] = useState<Recipe[]>(fallbackRecipes);
     const [loading, setLoading] = useState(true);
+    const [useApiData, setUseApiData] = useState(false);
+    const [recipeIngredients, setRecipeIngredients] = useState<Record<string, string[]>>({});
 
     // Fetch user ID from Supabase Auth
     const [userId, setUserId] = useState<string | null>(null);
@@ -88,7 +237,7 @@ export function CookbookScreen() {
         supabase.auth.getUser().then(({ data, error }) => {
             if (data?.user) {
                 setUserId(data.user.id);
-                console.log('Set userId:', data.user.id); // <-- Add this
+                console.log('Set userId:', data.user.id);
             } else {
                 console.log('No user found', error);
             }
@@ -98,25 +247,77 @@ export function CookbookScreen() {
     useEffect(() => {
         console.log('CookbookScreen useEffect, userId:', userId);
         if (!userId) return;
+
         setLoading(true);
-        fetchUserRecipes(userId)
+        fetch(`https://floatiest-uncontested-romaine.ngrok-free.dev/api/recipes/user/${userId}`)
+            .then(response => response.json())
             .then(data => {
-                console.log('API data:', data); // <-- Add this
+                console.log('API data:', data);
                 const mappedRecipes = (data.recipes || []).map((r: any) => ({
                     ...r,
-                    category: r.type,
+                    category: r.type || 'meat',
+                    id: String(r.id),
+                    instructions: typeof r.instructions === 'string'
+                        ? r.instructions.split('\n').filter(line => line.trim())
+                        : r.instructions || [],
+                    ingredients: r.ingredients || [],
+                    cookTime: r.cookTime || '30 min',
+                    servings: r.servings || 4,
+                    difficulty: r.difficulty || 'easy'
                 }));
-                console.log('Mapped recipes:', mappedRecipes); // <-- And this
-                setRecipes(mappedRecipes);
+
+                console.log('Mapped recipes:', mappedRecipes);
+
+                if (mappedRecipes.length > 0) {
+                    setRecipes(mappedRecipes);
+                    setUseApiData(true);
+                    console.log('Using API recipes');
+                } else {
+                    console.log('Using fallback recipes');
+                }
+                setLoading(false);
+            })
+            .catch(error => {
+                console.error('Error fetching recipes:', error);
+                console.log('Using fallback recipes due to error');
                 setLoading(false);
             });
     }, [userId]);
 
+    // Function to fetch ingredients for a specific recipe
+    const fetchRecipeIngredients = async (recipeId: string) => {
+        if (!useApiData || recipeIngredients[recipeId]) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`https://floatiest-uncontested-romaine.ngrok-free.dev/api/recipes/${recipeId}/ingredients`);
+            const data = await response.json();
+
+            if (data.ingredients) {
+                const ingredientsList = data.ingredients.map((ing: any) =>
+                    ing.quantity ? `${ing.quantity} ${ing.name}` : ing.name
+                );
+
+                setRecipeIngredients(prev => ({
+                    ...prev,
+                    [recipeId]: ingredientsList
+                }));
+
+                setRecipes(prev => prev.map(recipe =>
+                    recipe.id === recipeId
+                        ? { ...recipe, ingredients: ingredientsList }
+                        : recipe
+                ));
+            }
+        } catch (error) {
+            console.error('Error fetching ingredients:', error);
+        }
+    };
 
     // When a recipe is selected, slide the detail in from the right
     useEffect(() => {
         if (selectedRecipe) {
-            // reset to off-screen right then animate to 0
             translateX.setValue(screenWidth);
             Animated.timing(translateX, {
                 toValue: 0,
@@ -127,183 +328,12 @@ export function CookbookScreen() {
     }, [selectedRecipe, screenWidth, translateX]);
 
     const handleCloseDetail = () => {
-        // slide out to the right then clear selectedRecipe
         Animated.timing(translateX, {
             toValue: screenWidth,
             duration: 220,
             useNativeDriver: true,
         }).start(() => setSelectedRecipe(null));
     };
-    const [recipes, setRecipes] = useState<Recipe[]>([
-        // Meat recipes
-        {
-            id: '1',
-            name: 'Mongolian Beef',
-            category: 'meat',
-            cookTime: '30 min',
-            servings: 4,
-            difficulty: 'medium',
-            ingredients: ['Beef strips', 'Onions', 'Soy sauce', 'Brown sugar', 'Garlic'],
-            instructions: ['Marinate beef', 'Stir fry with onions', 'Add sauce', 'Serve hot']
-        },
-        {
-            id: '2',
-            name: 'BBQ Chicken',
-            category: 'meat',
-            cookTime: '40 min',
-            servings: 6,
-            difficulty: 'easy',
-            ingredients: ['Chicken thighs', 'BBQ sauce', 'Onion powder', 'Paprika', 'Salt'],
-            instructions: ['Season chicken', 'Grill 15 min each side', 'Brush with BBQ sauce']
-        },
-        // Sweet recipes
-        {
-            id: '3',
-            name: 'Chocolate Cake',
-            category: 'sweet',
-            cookTime: '45 min',
-            servings: 8,
-            difficulty: 'medium',
-            ingredients: ['Flour', 'Cocoa powder', 'Sugar', 'Eggs', 'Butter'],
-            instructions: ['Mix dry ingredients', 'Add wet ingredients', 'Bake at 350°F']
-        },
-        {
-            id: '4',
-            name: 'Banana Bread',
-            category: 'sweet',
-            cookTime: '60 min',
-            servings: 10,
-            difficulty: 'easy',
-            ingredients: ['Ripe bananas', 'Flour', 'Sugar', 'Eggs', 'Baking soda'],
-            instructions: ['Mash bananas', 'Mix all ingredients', 'Bake 60 minutes']
-        },
-        // Vegetarian recipes
-        {
-            id: '5',
-            name: 'Caesar Salad',
-            category: 'vegetarian',
-            cookTime: '15 min',
-            servings: 2,
-            difficulty: 'easy',
-            ingredients: ['Romaine lettuce', 'Parmesan cheese', 'Croutons', 'Caesar dressing'],
-            instructions: ['Wash lettuce', 'Add dressing', 'Top with cheese and croutons']
-        },
-        {
-            id: '6',
-            name: 'Caprese Pasta',
-            category: 'vegetarian',
-            cookTime: '25 min',
-            servings: 4,
-            difficulty: 'easy',
-            ingredients: ['Pasta', 'Fresh mozzarella', 'Cherry tomatoes', 'Basil', 'Olive oil'],
-            instructions: ['Cook pasta', 'Add tomatoes and mozzarella', 'Toss with basil']
-        },
-        // Vegan recipes
-        {
-            id: '7',
-            name: 'Quinoa Bowl',
-            category: 'vegan',
-            cookTime: '20 min',
-            servings: 2,
-            difficulty: 'easy',
-            ingredients: ['Quinoa', 'Black beans', 'Avocado', 'Corn', 'Lime'],
-            instructions: ['Cook quinoa', 'Mix with beans and corn', 'Top with avocado']
-        },
-        {
-            id: '8',
-            name: 'Lentil Curry',
-            category: 'vegan',
-            cookTime: '35 min',
-            servings: 4,
-            difficulty: 'medium',
-            ingredients: ['Red lentils', 'Coconut milk', 'Curry powder', 'Onions', 'Tomatoes'],
-            instructions: ['Sauté onions', 'Add lentils and spices', 'Simmer with coconut milk']
-        },
-        // Seafood recipes
-        {
-            id: '9',
-            name: 'Grilled Salmon',
-            category: 'seafood',
-            cookTime: '20 min',
-            servings: 2,
-            difficulty: 'easy',
-            ingredients: ['Salmon fillets', 'Lemon', 'Olive oil', 'Salt', 'Pepper'],
-            instructions: ['Season salmon', 'Grill 6 minutes each side', 'Serve with lemon']
-        },
-        {
-            id: '10',
-            name: 'Shrimp Scampi',
-            category: 'seafood',
-            cookTime: '15 min',
-            servings: 3,
-            difficulty: 'medium',
-            ingredients: ['Shrimp', 'Garlic', 'White wine', 'Butter', 'Pasta'],
-            instructions: ['Sauté garlic', 'Add shrimp and wine', 'Toss with pasta']
-        },
-        // Fruit recipes
-        {
-            id: '11',
-            name: 'Berry Smoothie',
-            category: 'fruit',
-            cookTime: '5 min',
-            servings: 1,
-            difficulty: 'easy',
-            ingredients: ['Mixed berries', 'Banana', 'Yogurt', 'Honey', 'Ice'],
-            instructions: ['Blend all ingredients', 'Serve immediately']
-        },
-        {
-            id: '12',
-            name: 'Apple Crisp',
-            category: 'fruit',
-            cookTime: '50 min',
-            servings: 6,
-            difficulty: 'easy',
-            ingredients: ['Apples', 'Oats', 'Brown sugar', 'Butter', 'Cinnamon'],
-            instructions: ['Slice apples', 'Mix topping', 'Bake 45 minutes']
-        },
-        // Egg recipes
-        {
-            id: '13',
-            name: 'Scrambled Eggs',
-            category: 'egg',
-            cookTime: '5 min',
-            servings: 2,
-            difficulty: 'easy',
-            ingredients: ['Eggs', 'Butter', 'Salt', 'Pepper', 'Chives'],
-            instructions: ['Beat eggs', 'Cook low and slow', 'Garnish with chives']
-        },
-        {
-            id: '14',
-            name: 'Egg Benedict',
-            category: 'egg',
-            cookTime: '25 min',
-            servings: 2,
-            difficulty: 'hard',
-            ingredients: ['English muffins', 'Eggs', 'Ham', 'Hollandaise sauce', 'Paprika'],
-            instructions: ['Poach eggs', 'Toast muffins', 'Assemble with ham and sauce']
-        },
-        // Grain recipes
-        {
-            id: '15',
-            name: 'Garlic Bread',
-            category: 'grain',
-            cookTime: '15 min',
-            servings: 4,
-            difficulty: 'easy',
-            ingredients: ['Baguette', 'Garlic', 'Butter', 'Parsley', 'Parmesan'],
-            instructions: ['Mix garlic butter', 'Spread on bread', 'Bake until golden']
-        },
-        {
-            id: '16',
-            name: 'French Toast',
-            category: 'grain',
-            cookTime: '20 min',
-            servings: 4,
-            difficulty: 'easy',
-            ingredients: ['Thick bread', 'Eggs', 'Milk', 'Vanilla', 'Cinnamon'],
-            instructions: ['Make custard', 'Dip bread', 'Cook until golden brown']
-        }
-    ]);
 
     // Filter recipes based on selected categories
     const filteredRecipes = selectedCategories.length === 0
@@ -337,11 +367,11 @@ export function CookbookScreen() {
     };
 
     const searchForNewRecipes = () => {
-        // TODO: Implement search for new recipes to add
         console.log('Searching for:', searchQuery);
     };
 
     const handleRecipePress = (recipe: Recipe) => {
+        fetchRecipeIngredients(recipe.id);
         setSelectedRecipe(recipe);
     };
 
@@ -350,6 +380,14 @@ export function CookbookScreen() {
     };
 
     const renderCookbookContent = () => {
+        if (loading) {
+            return (
+                <View style={styles.emptyState}>
+                    <Text style={styles.emptyTitle}>Loading recipes...</Text>
+                </View>
+            );
+        }
+
         if (recipes.length === 0) {
             return (
                 <View style={styles.emptyState}>
@@ -368,6 +406,13 @@ export function CookbookScreen() {
 
         return (
             <View style={styles.cookbookContent}>
+                {/* Show indicator of data source */}
+                <View style={styles.dataSourceIndicator}>
+                    <Text style={styles.dataSourceText}>
+                        {useApiData ? '📡 Your saved recipes' : '📚 Sample recipes'}
+                    </Text>
+                </View>
+
                 {/* Category Filters */}
                 <ScrollView
                     horizontal
@@ -431,58 +476,18 @@ export function CookbookScreen() {
     const renderGroceryContent = () => {
         const activeRecipesList = recipes.filter(recipe => activeRecipes.includes(recipe.id));
 
-        if (activeRecipesList.length === 0) {
-            return (
-                <View style={styles.emptyState}>
-                    <ShoppingCart size={64} color={colors.muted} />
-                    <Text style={styles.emptyTitle}>No active recipes</Text>
-                    <Text style={styles.emptyDescription}>
-                        Long press on recipes in your cookbook to add them to your grocery list
-                    </Text>
-                </View>
-            );
-        }
-
-        // Combine all ingredients from active recipes
-        const allIngredients = activeRecipesList.flatMap(recipe =>
-            recipe.ingredients?.map(ingredient => ({
-                ingredient,
-                recipe: recipe.name
-            })) || []
-        );
-
-        const groupedIngredients = allIngredients.reduce((groups, item) => {
-            if (!groups[item.ingredient]) {
-                groups[item.ingredient] = [];
-            }
-            groups[item.ingredient].push(item.recipe);
-            return groups;
-        }, {} as Record<string, string[]>);
-
         return (
-            <ScrollView style={styles.groceryContent}>
-                <Text style={styles.groceryTitle}>
-                    Grocery List ({activeRecipesList.length} recipe{activeRecipesList.length !== 1 ? 's' : ''})
-                </Text>
-
-                {Object.entries(groupedIngredients).map(([ingredient, recipeNames]) => (
-                    <View key={ingredient} style={styles.groceryItem}>
-                        <View style={styles.checkbox} />
-                        <View style={styles.groceryItemContent}>
-                            <Text style={styles.groceryItemName}>{ingredient}</Text>
-                            <Text style={styles.groceryItemRecipes}>
-                                for {recipeNames.join(', ')}
-                            </Text>
-                        </View>
-                    </View>
-                ))}
-            </ScrollView>
+            <GroceryListScreen
+                activeRecipes={activeRecipesList}
+                onGenerateList={async (recipeIds: string[]) => {
+                    console.log('Generating list for recipes:', recipeIds);
+                }}
+            />
         );
     };
 
     return (
         <View style={styles.container}>
-            {/* Always render cookbook UI beneath the detail overlay so the detail can slide over it */}
             <>
                 {/* Search Bar */}
                 <View style={styles.searchContainer}>
@@ -548,7 +553,7 @@ export function CookbookScreen() {
                 </View>
             </>
 
-            {/* Animated detail overlay - slides in/out over the cookbook */}
+            {/* Animated detail overlay */}
             {selectedRecipe && (
                 <Animated.View
                     style={[
@@ -694,6 +699,15 @@ const styles = StyleSheet.create({
     },
     cookbookContent: {
         flex: 1,
+    },
+    dataSourceIndicator: {
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    dataSourceText: {
+        fontSize: 12,
+        color: colors.muted,
+        fontStyle: 'italic',
     },
     filterContainer: {
         marginBottom: 16,
@@ -841,47 +855,6 @@ const styles = StyleSheet.create({
         color: colors.background,
         fontSize: 12,
         fontWeight: 'bold',
-    },
-    groceryContent: {
-        flex: 1,
-    },
-    groceryTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: colors.text,
-        marginBottom: 16,
-    },
-    groceryItem: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        padding: 12,
-        backgroundColor: colors.cardBg,
-        borderRadius: 8,
-        marginBottom: 8,
-        borderWidth: 1,
-        borderColor: colors.border,
-    },
-    checkbox: {
-        width: 20,
-        height: 20,
-        borderRadius: 4,
-        borderWidth: 2,
-        borderColor: colors.border,
-        marginRight: 12,
-        marginTop: 2,
-    },
-    groceryItemContent: {
-        flex: 1,
-    },
-    groceryItemName: {
-        fontSize: 16,
-        fontWeight: '500',
-        color: colors.text,
-        marginBottom: 2,
-    },
-    groceryItemRecipes: {
-        fontSize: 12,
-        color: colors.muted,
     },
     detailOverlay: {
         position: 'absolute',
