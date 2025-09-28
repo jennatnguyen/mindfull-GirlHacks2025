@@ -17,7 +17,7 @@ async function createClient() {
 
 async function askGemini(prompt) {
   const ai = await createClient();
-  const model = 'gemini-2.0-flash-001'; // recommended current model
+  const model = 'gemini-2.0-flash-001';
 
   const resp = await ai.models.generateContent({
     model,
