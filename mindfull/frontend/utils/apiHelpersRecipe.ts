@@ -1,4 +1,5 @@
-import { RECIPES_API_URL, MEDICINE_API_URL } from './api';
+import { API_BASE_URL } from './api';
+const RECIPES_API_URL = `${API_BASE_URL}/recipes`;
 
 // ------------------- Recipe API helpers -------------------
 export async function fetchUserRecipes(user_id: string) {
@@ -60,12 +61,3 @@ export async function fetchIngredientsForRecipe(recipe_id: string | number) {
   if (!res.ok) throw new Error('Failed to fetch ingredients');
   return res.json();
 }
-
-// ------------------- Medicine API helpers (template) -------------------
-export async function fetchUserMedicines(user_id: string) {
-  const res = await fetch(`${MEDICINE_API_URL}/user/${user_id}`);
-  if (!res.ok) throw new Error('Failed to fetch medicines');
-  return res.json();
-}
-
-// Add more medicine helpers as needed, e.g. createMedicine, deleteMedicine, etc.
