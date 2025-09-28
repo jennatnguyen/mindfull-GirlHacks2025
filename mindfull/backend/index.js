@@ -13,8 +13,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Add request logging middleware
+app.use((req, res, next) => {
+	console.log(`${req.method} ${req.url} - From: ${req.ip}`);
+	next();
+});
+
 // Root route for API status
 app.get('/', (req, res) => {
+	console.log('Root route hit');
 	res.send('API is running');
 });
 
