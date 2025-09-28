@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, AppRegistry } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import MindfullMealPlannerScreen from './components/MindfullMealPlannerScreen';
+import MindfullMedicationScreen from './components/MindfullMedicationScreen';
 
 // Dummy icons for demonstration (replace with your icon library or remove if not needed)
 const Home = ({ size = 20 }) => <Text style={{ fontSize: size }}>🏠</Text>;
@@ -25,7 +27,7 @@ const Badge = ({ children }: { children: React.ReactNode }) => (
   </View>
 );
 
-type Screen = 'home';
+type Screen = 'home' | 'meals' | 'meds';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
@@ -34,8 +36,11 @@ export default function App() {
   const renderScreen = () => {
     switch (currentScreen) {
       case 'home':
-      default:
         return <HomeScreen userName={userName} onNavigate={setCurrentScreen} />;
+      case 'meals':
+        return <MindfullMealPlannerScreen />;
+      case 'meds':
+        return <MindfullMedicationScreen />;
     }
   };
 
@@ -64,7 +69,18 @@ export default function App() {
           active={currentScreen === 'home'}
           onPress={() => setCurrentScreen('home')}
         />
-        {/* Other nav buttons can be added here */}
+        <NavButton
+          icon={<Utensils size={20} />}
+          label="Meals"
+          active={currentScreen === 'meals'}
+          onPress={() => setCurrentScreen('meals')}
+        />
+        <NavButton
+          icon={<Pill size={20} />}
+          label="Medications"
+          active={currentScreen === 'meds'}
+          onPress={() => setCurrentScreen('meds')}
+        />
       </View>
     </View>
   );
