@@ -1,0 +1,60 @@
+
+# Node modules (any package location)
+**/node_modules
+**/node_modules/**
+
+# npm / yarn / pnpm logs & lock caches
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+pnpm-lock.yaml
+
+# Environment files
+.env
+.env.*.local
+
+# Expo / React Native local files
+**/.expo
+**/.expo-shared
+.expo/
+.expo-shared/
+
+# iOS / Android build outputs (native shells)
+ios/
+android/
+*.keystore
+gradle/
+.gradle/
+
+# EAS / build caches
+.eas/
+.expo-build/
+web-build/
+build/
+dist/
+
+# Vite / bundler caches
+node_modules/.vite
+.vite
+.vitepress
+.cache
+.cache/**
+
+# TypeScript
+*.tsbuildinfo
+
+# Editor / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Test / coverage
+coverage/
+*.lcov
+
+# Misc
+*.tgz
+*.log
+*.env.local
