@@ -203,9 +203,25 @@ export function MedicationScreen() {
 
 
 const styles = StyleSheet.create({
-  container: { padding: 16, paddingBottom: 40, backgroundColor: colors.background },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  title: { fontSize: 20, fontWeight: '700', color: colors.text },
+  container: {
+    padding: 16,
+    paddingTop: 8, // Reduced from 16 to 8
+    paddingBottom: 40,
+    backgroundColor: colors.background
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8, // Reduced from 12 to 8
+    marginTop: -4,   // Pull the entire header row up
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: colors.text,
+    marginTop: 0, // Removed the negative margin
+  },
   addBtn: { backgroundColor: colors.text, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
   addBtnText: { color: 'white' },
   alert: { backgroundColor: colors.warningLight, padding: 10, borderRadius: 8, marginBottom: 12 },

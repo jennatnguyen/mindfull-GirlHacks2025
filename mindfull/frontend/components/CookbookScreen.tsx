@@ -454,6 +454,7 @@ const styles = StyleSheet.create({
     },
     searchContainer: {
         marginBottom: 16,
+        marginTop: -6,
     },
     searchBar: {
         flexDirection: 'row',
