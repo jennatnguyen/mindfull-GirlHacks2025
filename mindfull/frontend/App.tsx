@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cardBg,
   borderRadius: 20,
   padding: 14,
-  marginBottom: 36,
+  marginBottom: 56,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -619,7 +619,8 @@ const styles = StyleSheet.create({
   footerActionsInScroll: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 16,
+    marginTop: 72,
+    marginBottom: 24,
   },
 });
 
