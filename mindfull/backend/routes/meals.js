@@ -12,14 +12,12 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'Name and user_id are required' });
   }
   try {
-    // Use Gemini to generate a recipe object (or array)
-    const recipes = await generateRecipes(name);
-    const recipe = recipes[0]; // Use the first generated recipe
-    const instructions = Array.isArray(recipe.steps) ? recipe.steps.join('\n') : '';
+    // TEMP: Mock Gemini response for testing
+    const instructions = '1. Prep your ingredients.\n2. Cook everything in a pan.\n3. Serve and enjoy!';
 
     const { data, error } = await supabase
       .from('recipes')
-      .insert([{ name: recipe.title || name, instructions, user_id }])
+      .insert([{ name, instructions, user_id }])
       .select();
     if (error) {
       console.error('Supabase error:', error);
@@ -40,21 +38,6 @@ router.get('/user/:user_id', async (req, res) => {
       .from('recipes')
       .select('*')
       .eq('user_id', user_id);
-    if (error) {
-      console.error('Supabase error:', error);
-      return res.status(500).json({ error: 'Failed to fetch recipes' });
-    }
-    res.json({ recipes: data });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// Get all recipes
-router.get('/', async (req, res) => {
-  try {
-    const { data, error } = await supabase.from('recipes').select('*');
     if (error) {
       console.error('Supabase error:', error);
       return res.status(500).json({ error: 'Failed to fetch recipes' });
@@ -104,14 +87,14 @@ router.delete('/:id', async (req, res) => {
 
 // ---------------------- GROCERY LIST ---------------------------------------------
 // POST /api/recipes/grocery-list
-// Expects: { recipeIds: [1,2,3] }
+// Expects: { user_id: '...', recipeIds: [1,2,3] }
 router.post('/grocery-list', async (req, res) => {
-  const { recipeIds } = req.body;
-  if (!recipeIds || !Array.isArray(recipeIds) || recipeIds.length === 0) {
-    return res.status(400).json({ error: 'recipeIds array is required' });
+  const { user_id, recipeIds } = req.body;
+  if (!user_id || !recipeIds || !Array.isArray(recipeIds) || recipeIds.length === 0) {
+    return res.status(400).json({ error: 'user_id and recipeIds array are required' });
   }
   try {
-    // Get all ingredients for the selected recipes
+    // 1. Get all ingredients for the selected recipes
     const { data: ingredients, error: ingredientError } = await supabase
       .from('ingredients')
       .select('*')
@@ -120,7 +103,60 @@ router.post('/grocery-list', async (req, res) => {
       console.error(ingredientError);
       return res.status(500).json({ error: 'Failed to fetch ingredients' });
     }
-    res.json({ groceryList: ingredients });
+
+    // 2. Mock Gemini API call to generate grocery list from ingredients
+    // In real use, send the ingredients array to Gemini and get a formatted grocery list
+    const groceryListText = 'Grocery List:\n' + ingredients.map(i => `- ${i.name} (${i.quantity || '1'})`).join('\n');
+    const list_json = {
+      items: ingredients.map(i => ({ name: i.name, quantity: i.quantity || '1' }))
+    };
+
+    // 3. Save grocery list to grocery_lists table
+    const { data: savedList, error: saveError } = await supabase
+      .from('grocery_lists')
+      .insert([
+        {
+          user_id,
+          meal_ids: recipeIds,
+          list_json,
+          created_at: new Date().toISOString()
+        }
+      ])
+      .select();
+    if (saveError) {
+      console.error(saveError);
+      return res.status(500).json({ error: 'Failed to save grocery list' });
+    }
+
+    res.status(201).json({ groceryList: savedList[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /api/recipes/grocery-list/:id/items
+router.get('/grocery-list/:id/items', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { data, error } = await supabase
+      .from('grocery_lists')
+      .select('list_json')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('Supabase error:', error);
+      return res.status(404).json({ error: 'Grocery list not found' });
+    }
+
+    // Defensive: handle missing or malformed list_json
+    let items = [];
+    if (data && data.list_json && Array.isArray(data.list_json.items)) {
+      items = data.list_json.items;
+    }
+
+    res.json({ items });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
