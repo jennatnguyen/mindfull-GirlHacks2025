@@ -7,7 +7,7 @@ import { CookbookScreen } from './components/CookbookScreen';
 import { MedicationScreen } from './components/MedicationScreen';
 import { useSession } from './utils/useSession';
 import { signIn, signUp, signOut, getSession as getAuthSession } from './utils/auth';
-
+const logo = require('./assets/icon.png');
 
 // Dummy Button and Badge components for demonstration
 const Button = ({ onPress, children }: { onPress: () => void; children: React.ReactNode }) => (
@@ -49,7 +49,14 @@ export default function App() {
 
   // app-level state
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
-  const [userName, setUserName] = useState(user?.user_metadata?.display_name || user?.email || 'User');
+  // helper to make a nicer fallback name from email local-part
+  const deriveNameFromEmail = (email?: string | null) => {
+    if (!email) return 'User';
+    const parts = email.split('@');
+    return parts[0] || email;
+  };
+
+  const [userName, setUserName] = useState(user?.user_metadata?.display_name || deriveNameFromEmail(user?.email));
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [currentQuote, setCurrentQuote] = useState(motivationalQuotes[0]);
 
@@ -192,6 +199,8 @@ export default function App() {
             onNavigate={setCurrentScreen}
             currentImage={motivationalImages[currentImageIndex]}
             currentQuote={currentQuote}
+            onSettings={() => { /* navigate to settings or open modal */ }}
+            onSignOut={handleSignOut}
           />
         );
       case 'meals':
@@ -257,17 +266,12 @@ export default function App() {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Mindfull</Text>
-
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Button onPress={() => { /* settings action */ }}>
-            <Settings size={20} color={colors.text}/>
-          </Button>
-          <Button onPress={handleSignOut}>
-            Sign Out
-          </Button>
-        </View>
-
+        <Image
+          source={logo}
+          style={styles.logoImage}
+          resizeMode="contain"
+        />
+        {/* Header actions removed — moved to footer so they only appear on Home screen */}
       </View>
 
       {/* Main Content */}
@@ -296,6 +300,7 @@ export default function App() {
           onPress={() => setCurrentScreen('meds')}
         />
       </View>
+      {/* footer actions removed (now rendered inside HomeScreen below the image) */}
     </View>
   );
 }
@@ -307,12 +312,16 @@ function HomeScreen({
   userName,
   onNavigate,
   currentImage,
-  currentQuote
+  currentQuote,
+  onSettings,
+  onSignOut,
 }: {
   userName: string;
   onNavigate: (screen: Screen) => void;
   currentImage: string;
   currentQuote: string;
+  onSettings: () => void;
+  onSignOut: () => void | Promise<void>;
 }) {
 
   return (
@@ -332,6 +341,18 @@ function HomeScreen({
           style={styles.motivationalImage}
           resizeMode="cover"
         />
+      </View>
+
+      {/* Action buttons below the image (only on Home) */}
+      <View style={styles.footerActionsInScroll}>
+        <TouchableOpacity style={styles.footerButton} onPress={onSettings}>
+          <Settings size={18} color={colors.text} />
+          <Text style={[styles.buttonText, { marginLeft: 8 }]}>Settings</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.footerButton} onPress={onSignOut}>
+          <Text style={styles.buttonText}>Sign Out</Text>
+        </TouchableOpacity>
       </View>
 
     </View>
@@ -573,6 +594,32 @@ const styles = StyleSheet.create({
   loginButtonText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  logoImage: {
+    width: 120,
+    height: 80,
+    // Adjust width/height to fit your design
+  },
+  footerActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  footerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+  },
+  footerActionsInScroll: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
   },
 });
 
