@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, AppRegistry, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, AppRegistry, Image, TextInput } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { colors } from './theme';
 import { Home, Pill, Utensils, Brain, Heart, Settings, Clock, BookOpen } from 'lucide-react-native';
 import { CookbookScreen } from './components/CookbookScreen';
 import { MedicationScreen } from './components/MedicationScreen';
+import { useSession } from './utils/useSession';
+import { signIn, signUp, signOut } from './utils/auth';
 
 // Dummy Button and Badge components for demonstration
 const Button = ({ onPress, children }: { onPress: () => void; children: React.ReactNode }) => (
@@ -40,18 +42,43 @@ const motivationalQuotes = [
 ];
 
 export default function App() {
-  React.useEffect(() => {
-    if (user?.email) setUserName(user.email);
-  }, [user]);
+  // authentication/session wiring
+  const session = useSession();
+  const user = (session as any)?.user ?? null;
 
-  if (!session) {
-    return <LoginScreen />;
-  }
-  const [userName, setUserName] = useState('User');
+  // app-level state
+  const [currentScreen, setCurrentScreen] = useState<Screen>('home');
+  const [userName, setUserName] = useState(user?.email || 'User');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [currentQuote, setCurrentQuote] = useState(motivationalQuotes[0]);
 
-  // Change image every hour and quote every time
+  // --- Authentication form state (kept in App for hackathon simplicity) ---
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [name, setName] = useState('');
+
+  const handleAuth = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      if (mode === 'login') {
+        await signIn(email, password);
+      } else {
+        await signUp(email, password, name);
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Authentication failed');
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (user?.email) setUserName(user.email);
+  }, [user]);
+  // Change image every hour and quote every time (keep hooks above any early returns)
   useEffect(() => {
     const updateContent = () => {
       const hour = new Date().getHours();
@@ -66,6 +93,52 @@ export default function App() {
 
     return () => clearInterval(interval);
   }, []);
+
+  // If there is no session yet (not signed in) show a simple login/signup form in App
+  if (!session)
+    return (
+      <View style={styles.loginContainer}>
+        <Text style={styles.headerTitle}>Mindfull</Text>
+        <Text style={styles.loginSubtitle}>{mode === 'login' ? 'Sign In' : 'Sign Up'}</Text>
+
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          autoCapitalize="none"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          autoCapitalize="none"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
+
+        {mode === 'signup' && (
+          <TextInput
+            style={styles.input}
+            placeholder="Name"
+            autoCapitalize="words"
+            value={name}
+            onChangeText={setName}
+          />
+        )}
+
+        {error && <Text style={styles.errorText}>{error}</Text>}
+
+        <Button onPress={handleAuth}>{loading ? 'Loading...' : mode === 'login' ? 'Sign In' : 'Sign Up'}</Button>
+
+        <TouchableOpacity onPress={() => setMode(mode === 'login' ? 'signup' : 'login')}>
+          <Text style={styles.switchText}>{mode === 'login' ? "Don't have an account? Sign Up" : 'Already have an account? Sign In'}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+
 
   const renderScreen = () => {
     switch (currentScreen) {
@@ -134,90 +207,7 @@ export default function App() {
   );
 }
 
-//---------------------------------------Login Screen---------------------------------------
-function LoginScreen() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [name, setName] = useState('');
-
-  const handleAuth = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      if (mode === 'login') {
-        await signIn(email, password);
-      } else {
-        // ✅ Pass the name along to signUp
-        await signUp(email, password, name);
-      }
-    } catch (err: any) {
-      setError(err.message || 'Authentication failed');
-    }
-    setLoading(false);
-  };
-
-  return (
-    <View style={styles.loginContainer}>
-      <Text style={styles.headerTitle}>Mindfull</Text>
-      <Text style={styles.loginSubtitle}>
-        {mode === 'login' ? 'Sign In' : 'Sign Up'}
-      </Text>
-
-      {/* Email */}
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        autoCapitalize="none"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-      />
-
-      {/* Password */}
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        autoCapitalize="none"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-
-      {/* Name field only on Sign Up */}
-      {mode === 'signup' && (
-        <TextInput
-          style={styles.input}
-          placeholder="Name"
-          autoCapitalize="words"
-          value={name}
-          onChangeText={setName}
-        />
-      )}
-
-      {/* Errors */}
-      {error && <Text style={styles.errorText}>{error}</Text>}
-
-      {/* Action button */}
-      <Button onPress={handleAuth}>
-        {loading ? 'Loading...' : mode === 'login' ? 'Sign In' : 'Sign Up'}
-      </Button>
-
-      {/* Toggle between login/signup */}
-      <TouchableOpacity
-        onPress={() => setMode(mode === 'login' ? 'signup' : 'login')}
-      >
-        <Text style={styles.switchText}>
-          {mode === 'login'
-            ? "Don't have an account? Sign Up"
-            : 'Already have an account? Sign In'}
-        </Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
+// LoginScreen moved to ./components/LoginScreen.tsx to avoid hook ordering issues
 
 //---------------------------------------Home Screen---------------------------------------
 
