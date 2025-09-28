@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../utils/supabase';
+import { fetchUserRecipes, fetchIngredientsForRecipe } from '../utils/apiHelpersRecipe';
+
 import {
   View,
   Text,
@@ -13,11 +16,9 @@ import {
 export type Meal = {
   id: string;
   name: string;
-  type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
-  day: string;
+  type: 'meat' | 'sweet' | 'vegetarian' | 'vegan' | 'seafood' | 'fruit' | 'egg' | 'bread';
+  instructions: string;
   ingredients: string[];
-  cookTime: string;
-  servings: number;
 };
 
 type GroceryItem = {
@@ -29,26 +30,50 @@ type GroceryItem = {
 };
 
 export function MindfullMealPlannerScreen() {
-  const [meals, setMeals] = useState<Meal[]>([
-    {
-      id: '1',
-      name: 'Overnight Oats',
-      type: 'breakfast',
-      day: 'Monday',
-      ingredients: ['Rolled oats', 'Milk', 'Banana', 'Honey'],
-      cookTime: '5 min',
-      servings: 1,
-    },
-    {
-      id: '2',
-      name: 'Chicken Stir Fry',
-      type: 'dinner',
-      day: 'Monday',
-      ingredients: ['Chicken breast', 'Mixed vegetables', 'Soy sauce', 'Rice'],
-      cookTime: '20 min',
-      servings: 2,
-    },
-  ]);
+  const [meals, setMeals] = useState<Meal[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Get the current user from Supabase Auth
+    supabase.auth.getUser().then(({ data, error }) => {
+      if (data?.user) setUserId(data.user.id);
+      else setUserId(null);
+    });
+  }, []); 
+
+  useEffect(() => {
+    if (!userId) return;
+    fetchUserRecipes(userId)
+      .then(async data => {
+        if (Array.isArray(data.recipes)) {
+          // For each recipe, fetch its ingredients from the backend
+          const mealsWithIngredients = await Promise.all(
+            data.recipes.map(async (r: any) => {
+              let ingredients: string[] = [];
+              try {
+                const ingRes = await fetchIngredientsForRecipe(r.id);
+                if (Array.isArray(ingRes.ingredients)) {
+                  ingredients = ingRes.ingredients.map((i: any) => i.name);
+                }
+              } catch (e) {
+                // If ingredient fetch fails, leave as empty array
+              }
+              return {
+                id: String(r.id),
+                name: r.name,
+                type: r.type,
+                instructions: r.instructions || '',
+                ingredients,
+              };
+            })
+          );
+          setMeals(mealsWithIngredients);
+        }
+      })
+      .catch(err => {
+        console.error('Failed to fetch recipes:', err);
+      });
+  }, [userId]);
 
   const [groceryList, setGroceryList] = useState<GroceryItem[]>([
     { id: '1', name: 'Rolled oats', amount: '1 container', category: 'Grains', checked: false },
@@ -60,7 +85,7 @@ export function MindfullMealPlannerScreen() {
   const [showAddMealDialog, setShowAddMealDialog] = useState(false);
   const [peopleCount, setPeopleCount] = useState(2);
   const [newMealName, setNewMealName] = useState('');
-  const [newMealType, setNewMealType] = useState<Meal['type']>('dinner');
+  const [newMealType, setNewMealType] = useState<Meal['type']>('meat');
   const [newMealDay, setNewMealDay] = useState('Monday');
 
   const toggleGroceryItem = (id: string) => {
@@ -84,19 +109,17 @@ export function MindfullMealPlannerScreen() {
       id: String(Date.now()),
       name: newMealName.trim(),
       type: newMealType,
-      day: newMealDay,
+      instructions: '',
       ingredients: [],
-      cookTime: '10 min',
-      servings: 1,
     };
     setMeals(prev => [meal, ...prev]);
     setNewMealName('');
-    setNewMealType('dinner');
+  setNewMealType('meat');
     setNewMealDay('Monday');
     setShowAddMealDialog(false);
   };
 
-  const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  // No longer grouping by day since 'day' is not in schema
 
   return (
     <ScrollView contentContainerStyle={{ padding: 16 }}>
@@ -132,37 +155,33 @@ export function MindfullMealPlannerScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Meals by day */}
-      {daysOfWeek.map(day => {
-        const dayMeals = meals.filter(m => m.day === day);
-        return (
-          <View key={day} style={styles.card}>
-            <Text style={styles.cardTitle}>{day}</Text>
-            {dayMeals.length === 0 ? (
-              <Text style={styles.muted}>No meals planned for {day}</Text>
-            ) : (
-              <View>
-                {dayMeals.map(meal => (
-                  <View key={meal.id} style={styles.mealRow}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <View style={styles.mealAvatar}>
-                        <Text style={{ color: 'white' }}>🍽️</Text>
-                      </View>
-                      <View style={{ marginLeft: 12 }}>
-                        <Text style={{ fontWeight: '600' }}>{meal.name}</Text>
-                        <Text style={styles.muted}>{meal.cookTime} • {meal.servings} serving{meal.servings > 1 ? 's' : ''}</Text>
-                      </View>
-                    </View>
-                    <View style={styles.badge}>
-                      <Text style={styles.badgeText}>{meal.type}</Text>
-                    </View>
+      {/* Meals List */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Meals</Text>
+        {meals.length === 0 ? (
+          <Text style={styles.muted}>No meals found.</Text>
+        ) : (
+          <View>
+            {meals.map(meal => (
+              <View key={meal.id} style={styles.mealRow}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={styles.mealAvatar}>
+                    <Text style={{ color: 'white' }}>🍽️</Text>
                   </View>
-                ))}
+                  <View style={{ marginLeft: 12 }}>
+                    <Text style={{ fontWeight: '600' }}>{meal.name}</Text>
+                    <Text style={styles.muted}>{meal.type}</Text>
+                    {meal.instructions ? <Text style={styles.muted}>{meal.instructions}</Text> : null}
+                    {meal.ingredients.length > 0 && (
+                      <Text style={styles.muted}>Ingredients: {meal.ingredients.join(', ')}</Text>
+                    )}
+                  </View>
+                </View>
               </View>
-            )}
+            ))}
           </View>
-        );
-      })}
+        )}
+      </View>
 
       {/* Grocery list */}
       <View style={styles.card}>
@@ -217,9 +236,9 @@ export function MindfullMealPlannerScreen() {
             <TextInput value={newMealName} onChangeText={setNewMealName} style={styles.input} placeholder="e.g., Chicken Stir Fry" />
             <Text style={styles.label}>Type</Text>
             <View style={styles.row}>
-              {(['breakfast', 'lunch', 'dinner', 'snack'] as Meal['type'][]).map(t => (
+              {(['meat', 'sweet', 'vegetarian', 'vegan', 'seafood', 'fruit', 'egg', 'bread'] as Meal['type'][]).map(t => (
                 <TouchableOpacity key={t} onPress={() => setNewMealType(t)} style={[styles.pill, newMealType === t && styles.pillActive]}>
-                  <Text style={newMealType === t ? { color: 'white' } : undefined}>{t}</Text>
+                  <Text style={newMealType === t ? { color: 'white' } : undefined}>{t.charAt(0).toUpperCase() + t.slice(1)}</Text>
                 </TouchableOpacity>
               ))}
             </View>
