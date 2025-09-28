@@ -10,6 +10,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { colors } from '../theme';
+import CameraScreen from './CameraScreen';
 
 export type Medication = {
   id: string;
@@ -65,6 +66,10 @@ export function MedicationScreen() {
     }
     setShowVerifyModal(false);
     setSelectedMed(null);
+  };
+  const handleCapture = (photo: { uri: string }) => {
+    // Later: send photo.uri to backend for OCR/verification
+    handleMedVerified();
   };
 
   const addMedication = () => {
@@ -186,16 +191,8 @@ export function MedicationScreen() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Verify Medication</Text>
             <Text style={styles.muted}>Take a photo of your {selectedMed?.name} pill to confirm you're taking the right medication.</Text>
-            <View style={styles.cameraPlaceholder}>
-              <Text style={{ color: '#9CA3AF' }}>Camera preview</Text>
-            </View>
-            <View style={{ flexDirection: 'row', marginTop: 12 }}>
-              <TouchableOpacity style={[styles.btn, { flex: 1, borderWidth: 1, marginRight: 8 }]} onPress={() => setShowVerifyModal(false)}>
-                <Text>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.btn, { flex: 1 }]} onPress={handleMedVerified}>
-                <Text style={{ color: 'white' }}>Verify & Take</Text>
-              </TouchableOpacity>
+            <View style={{ marginTop: 10 }}>
+              <CameraScreen onCapture={handleCapture} onClose={() => setShowVerifyModal(false)} />
             </View>
           </View>
         </View>
