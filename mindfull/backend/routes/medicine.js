@@ -5,21 +5,16 @@ const supabase = require('../services/supabaseClient');
 // get user's medications
 router.get('/:userId', async (req, res) => {
 	const { userId } = req.params;
-	console.log('Getting medications for user:', userId);
 	try {
 		const { data, error } = await supabase
 		.from ('medications')
 		.select('*')
 		.eq('user_id', userId);
 	
-		console.log('Supabase response - data:', data, 'error:', error);
-	
 	if (error) {
 		console.error('Supabase error:', error);
 		return res.status(500).json({error: 'Failed to fetch medications'});
 	}
-	
-	console.log('Sending medications:', { medications: data });
 	res.json({ medications: data });
 	}
 	catch(err){
