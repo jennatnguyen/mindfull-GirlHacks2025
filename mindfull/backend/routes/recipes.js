@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { generateRecipes } = require('./recipeGenerator');
-// Do not require supabaseClient at module load time to avoid throwing when envs are missing;
-// require it lazily in routes that actually use it.
+
 
 // POST /api/recipes/generate
 // Generate recipes based on user input

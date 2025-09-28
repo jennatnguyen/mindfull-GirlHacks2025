@@ -4,7 +4,6 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 
-const recipesRouter = require('./routes/recipes'); // your file
 
 const app = express();
 app.use(helmet());
@@ -13,7 +12,8 @@ app.use(express.json({ limit: '100kb' }));
 app.use(morgan('tiny'));
 
 // mount routes
-app.use('/api/recipes', recipesRouter);
+app.use('/api/recipes', require('../routes/recipes'));
+app.use('/api/medications', require('../routes/medicine'));
 
 // generic error handler
 app.use((err, req, res, next) => {
