@@ -40,8 +40,6 @@ const motivationalQuotes = [
 ];
 
 export default function App() {
-  const [userName, setUserName] = useState(user?.email || 'User');
-
   React.useEffect(() => {
     if (user?.email) setUserName(user.email);
   }, [user]);
