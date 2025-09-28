@@ -34,12 +34,12 @@ const motivationalImages = [
 
 // Array of motivational quotes
 const motivationalQuotes = [
-  "You're doing great! Keep up the healthy habits! 🌟",
-  "Take it one meal, one pill, one moment at a time 💊",
-  "Self-care isn't selfish, it's essential 🧘‍♀️",
-  "Progress, not perfection. You've got this! 💪",
-  "Your health is your wealth 💎",
-  "Small steps lead to big changes 🌱",
+  "You're doing great! Keep up the healthy habits!",
+  "Take it one meal, one pill, one moment at a time",
+  "Self-care isn't selfish, it's essential",
+  "Progress, not perfection. You've got this!",
+  "Your health is your wealth",
+  "Small steps lead to big changes",
 ];
 
 export default function App() {
@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
     marginTop: -4, // Slight negative margin to pull up
   },
   welcomeTitle: {
-    fontSize: 28,
+    fontSize: 34,
     fontWeight: 'bold',
     color: colors.text,
     textAlign: 'center',

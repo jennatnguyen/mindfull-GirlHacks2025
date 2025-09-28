@@ -56,46 +56,10 @@ interface RecipeDetailScreenProps {
     onBack: () => void;
 }
 
-import { useEffect, useState } from 'react';
-import { fetchRecipeById, fetchIngredientsForRecipe } from '../utils/apiHelpersRecipe';
-
-export function RecipeDetailScreen({ recipeId, onBack }: { recipeId: string | number, onBack: () => void }) {
-    const [recipe, setRecipe] = useState<any>(null);
-    const [ingredients, setIngredients] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        setLoading(true);
-        async function loadRecipe() {
-            const recipeData = await fetchRecipeById(recipeId);
-            setRecipe(recipeData.recipe);
-            const ingData = await fetchIngredientsForRecipe(recipeId);
-            setIngredients(ingData.ingredients);
-            setLoading(false);
-        }
-        loadRecipe();
-    }, [recipeId]);
-
-    if (loading || !recipe) {
-        return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <Text>Loading...</Text>
-            </View>
-        );
-    }
-
-        const categoryStr = String(recipe.category);
-        const categoryKey = Object.prototype.hasOwnProperty.call(categoryIcons, categoryStr)
-            ? (categoryStr as keyof typeof categoryIcons)
-            : 'meat';
-        const IconComponent = categoryIcons[categoryKey];
-        const iconColor = categoryColors[categoryKey];
-
-        const difficultyStr = recipe.difficulty ? String(recipe.difficulty) : '';
-        const difficultyKey = Object.prototype.hasOwnProperty.call(difficultyColors, difficultyStr)
-            ? (difficultyStr as keyof typeof difficultyColors)
-            : undefined;
-        const difficultyColor = difficultyKey ? difficultyColors[difficultyKey] : colors.muted;
+export function RecipeDetailScreen({ recipe, onBack }: RecipeDetailScreenProps) {
+    const IconComponent = categoryIcons[recipe.category];
+    const iconColor = categoryColors[recipe.category];
+    const difficultyColor = recipe.difficulty ? difficultyColors[recipe.difficulty] : colors.muted;
 
     return (
         <View style={styles.container}>
@@ -152,14 +116,14 @@ export function RecipeDetailScreen({ recipeId, onBack }: { recipeId: string | nu
                 </View>
 
                 {/* Ingredients */}
-                {ingredients && ingredients.length > 0 && (
+                {recipe.ingredients && recipe.ingredients.length > 0 && (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Ingredients</Text>
                         <View style={styles.ingredientsList}>
-                            {ingredients.map((ingredient, index) => (
+                            {recipe.ingredients.map((ingredient, index) => (
                                 <View key={index} style={styles.ingredientItem}>
                                     <View style={styles.ingredientBullet} />
-                                    <Text style={styles.ingredientText}>{ingredient.name}{ingredient.quantity ? ` (${ingredient.quantity} ${ingredient.unit || ''})` : ''}</Text>
+                                    <Text style={styles.ingredientText}>{ingredient}</Text>
                                 </View>
                             ))}
                         </View>
@@ -171,17 +135,14 @@ export function RecipeDetailScreen({ recipeId, onBack }: { recipeId: string | nu
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Instructions</Text>
                         <View style={styles.instructionsList}>
-                            {Array.isArray(recipe.instructions)
-                                ? recipe.instructions.map((instruction: string, index: number) => (
-                                    <View key={index} style={styles.instructionItem}>
-                                        <View style={styles.stepNumber}>
-                                            <Text style={styles.stepNumberText}>{index + 1}</Text>
-                                        </View>
-                                        <Text style={styles.instructionText}>{instruction}</Text>
+                            {recipe.instructions.map((instruction, index) => (
+                                <View key={index} style={styles.instructionItem}>
+                                    <View style={styles.stepNumber}>
+                                        <Text style={styles.stepNumberText}>{index + 1}</Text>
                                     </View>
-                                ))
-                                : <Text style={styles.instructionText}>{recipe.instructions}</Text>
-                            }
+                                    <Text style={styles.instructionText}>{instruction}</Text>
+                                </View>
+                            ))}
                         </View>
                     </View>
                 )}
