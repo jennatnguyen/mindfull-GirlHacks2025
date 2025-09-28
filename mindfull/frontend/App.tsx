@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
     marginTop: -4, // Slight negative margin to pull up
   },
   welcomeTitle: {
-    fontSize: 28,
+    fontSize: 34,
     fontWeight: 'bold',
     color: colors.text,
     textAlign: 'center',
