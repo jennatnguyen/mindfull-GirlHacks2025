@@ -1,4 +1,7 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+
+// require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -12,7 +15,7 @@ app.use(express.json({ limit: '100kb' }));
 app.use(morgan('tiny'));
 
 // mount routes
-app.use('/api/recipes', require('../routes/recipes'));
+app.use('/api/recipes', require('../routes/meals')); //api/recipes handles routes in meals.js
 app.use('/api/medications', require('../routes/medicine'));
 
 // generic error handler
