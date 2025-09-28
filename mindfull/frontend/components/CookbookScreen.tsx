@@ -64,6 +64,7 @@ const categoryColors = {
     egg: '#eab308',
     grain: '#a855f7',
 };
+
 import { fetchUserRecipes } from '../utils/apiHelpersRecipe'; // <-- Import your helper
 import { supabase } from '../utils/supabase'; // <-- Import your supabase client
 
@@ -85,10 +86,10 @@ export function CookbookScreen() {
         supabase.auth.getUser().then(({ data, error }) => {
             if (data?.user) {
                 setUserId(data.user.id);
-            console.log('Set userId:', data.user.id); // <-- Add this
-        } else {
-            console.log('No user found', error);
-        }
+                console.log('Set userId:', data.user.id); // <-- Add this
+            } else {
+                console.log('No user found', error);
+            }
         });
     }, []);
 
@@ -98,17 +99,13 @@ export function CookbookScreen() {
         setLoading(true);
         fetchUserRecipes(userId)
             .then(data => {
-                console.log('API data:', data);
+                console.log('API data:', data); // <-- Add this
                 const mappedRecipes = (data.recipes || []).map((r: any) => ({
                     ...r,
                     category: r.type,
                 }));
-                console.log('Mapped recipes:', mappedRecipes);
+                console.log('Mapped recipes:', mappedRecipes); // <-- And this
                 setRecipes(mappedRecipes);
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error('Fetch error:', err);
                 setLoading(false);
             });
     }, [userId]);
@@ -458,7 +455,6 @@ const styles = StyleSheet.create({
     },
     searchContainer: {
         marginBottom: 16,
-        marginTop: -6,
     },
     searchBar: {
         flexDirection: 'row',

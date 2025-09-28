@@ -8,155 +8,97 @@ import {
   TextInput,
   Alert,
   StyleSheet,
-  ActivityIndicator,
-  RefreshControl,
 } from 'react-native';
 import { colors } from '../theme';
 import CameraScreen from './CameraScreen';
-import { API_BASE_URL } from '../utils/api';
-import { useMedications, type MedicationWithUI } from './hooks/useMedications';
-// TODO: Replace with actual user ID from your auth system
-const DEMO_USER_ID = '24e29b84-3e45-45fe-9de7-e3e447ced105';
+
+export type Medication = {
+  id: string;
+  name: string;
+  dose: string;
+  description: string;
+  time: string;
+  taken: boolean;
+  pillsRemaining: number;
+};
 
 export function MedicationScreen() {
-  console.log('MedicationScreen rendered');
-  
-  const {
-    medications,
-    loading,
-    error,
-    upcomingMeds,
-    lowStockMeds,
-    addMedication,
-    markAsTaken,
-    refreshMedications,
-  } = useMedications({ userId: DEMO_USER_ID });
-
-  console.log('MedicationScreen state:', { 
-    medicationsCount: medications.length, 
-    loading, 
-    error, 
-    upcomingCount: upcomingMeds.length,
-    lowStockCount: lowStockMeds.length 
-  });
+  const [medications, setMedications] = useState<Medication[]>([
+    {
+      id: '1',
+      name: 'Adderall',
+      dose: '20mg',
+      description: 'Orange oval pill',
+      time: '9:00 AM',
+      taken: false,
+      pillsRemaining: 15,
+    },
+    {
+      id: '2',
+      name: 'Multivitamin',
+      dose: '1 tablet',
+      description: 'Large brown capsule',
+      time: '9:00 AM',
+      taken: true,
+      pillsRemaining: 5,
+    },
+  ]);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
-  const [selectedMed, setSelectedMed] = useState<MedicationWithUI | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const [testResult, setTestResult] = useState<string>('');
+  const [selectedMed, setSelectedMed] = useState<Medication | null>(null);
 
-  // Form state
   const [newName, setNewName] = useState('');
   const [newDose, setNewDose] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [newTime, setNewTime] = useState('');
 
-  // Simple connectivity test
-  const testConnection = async () => {
-  console.log('Testing connection...');
-    setTestResult('Testing...');
-    try {
-      // Hit root by swapping '/api' -> '' to test reachability
-      const rootUrl = API_BASE_URL.replace(/\/?api\/?$/, '/');
-      const response = await fetch(rootUrl);
-      const text = await response.text();
-  console.log('Connection test result:', text);
-      setTestResult(`Success: ${text}`);
-    } catch (error) {
-  console.log('Connection test failed:', error);
-      setTestResult(`Failed: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  };
-
-  const handleTakeMedication = (med: MedicationWithUI) => {
+  const handleTakeMedication = (med: Medication) => {
     setSelectedMed(med);
     setShowVerifyModal(true);
   };
 
-  const handleMedVerified = async () => {
+  const handleMedVerified = () => {
     if (selectedMed) {
-      const success = await markAsTaken(selectedMed.id);
-      if (success) {
-        setShowVerifyModal(false);
-        setSelectedMed(null);
-      }
+      setMedications(prev =>
+        prev.map(m => (m.id === selectedMed.id ? { ...m, taken: true, pillsRemaining: Math.max(0, m.pillsRemaining - 1) } : m))
+      );
     }
+    setShowVerifyModal(false);
+    setSelectedMed(null);
   };
-
   const handleCapture = (photo: { uri: string }) => {
     // Later: send photo.uri to backend for OCR/verification
     handleMedVerified();
   };
 
-  const addMedicationHandler = async () => {
+  const addMedication = () => {
     if (!newName.trim()) {
       Alert.alert('Validation', 'Please enter a medication name.');
       return;
     }
-
-    const success = await addMedication({
+    const newMed: Medication = {
+      id: String(Date.now()),
       name: newName.trim(),
       dose: newDose.trim() || '—',
       description: newDescription.trim() || '',
-      // TODO: Add time/schedule handling
-    });
-
-    if (success) {
-      setNewName('');
-      setNewDose('');
-      setNewDescription('');
-      setNewTime('');
-      setShowAddModal(false);
-    }
+      time: newTime.trim() || '—',
+      taken: false,
+      pillsRemaining: 30,
+    };
+    setMedications(prev => [newMed, ...prev]);
+    setNewName('');
+    setNewDose('');
+    setNewDescription('');
+    setNewTime('');
+    setShowAddModal(false);
   };
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await refreshMedications();
-    setRefreshing(false);
-  };
-
-  if (loading && !refreshing) {
-    return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={colors.text} />
-        <Text style={[styles.muted, { marginTop: 16 }]}>Loading medications...</Text>
-        <Text style={[styles.muted, { marginTop: 8, fontSize: 12 }]}>API: {API_BASE_URL}</Text>
-        
-        {/* Debug section */}
-        <View style={{ marginTop: 30, alignItems: 'center' }}>
-          <TouchableOpacity style={styles.retryBtn} onPress={testConnection}>
-            <Text style={styles.retryBtnText}>Test Connection</Text>
-          </TouchableOpacity>
-          {testResult ? (
-            <Text style={[styles.muted, { marginTop: 10, textAlign: 'center' }]}>
-              {testResult}
-            </Text>
-          ) : null}
-        </View>
-      </View>
-    );
-  }
-
-  if (error && medications.length === 0) {
-    return (
-      <View style={[styles.container, styles.centered]}>
-  <Text style={styles.errorText}>Error: {error}</Text>
-        <TouchableOpacity style={styles.retryBtn} onPress={refreshMedications}>
-          <Text style={styles.retryBtnText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+  const upcomingMeds = medications.filter(m => !m.taken);
+  const lowStockMeds = medications.filter(m => m.pillsRemaining <= 5);
 
   return (
-          <ScrollView 
-            contentContainerStyle={styles.container}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-            }
-          >
+    <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.headerRow}>
         <Text style={styles.title}>Medications</Text>
         <TouchableOpacity style={styles.addBtn} onPress={() => setShowAddModal(true)}>
@@ -166,14 +108,14 @@ export function MedicationScreen() {
 
       {lowStockMeds.length > 0 && (
         <View style={styles.alert}>
-          <Text style={styles.alertText}>Warning: {lowStockMeds.length} medication(s) running low. Time to refill!</Text>
+          <Text style={styles.alertText}>⚠️ {lowStockMeds.length} medication(s) running low. Time to refill!</Text>
         </View>
       )}
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Due Now</Text>
         {upcomingMeds.length === 0 ? (
-          <Text style={styles.muted}>All medications taken for now!</Text>
+          <Text style={styles.muted}>All medications taken for now! 🎉</Text>
         ) : (
           upcomingMeds.map(med => (
             <View key={med.id} style={styles.medRow}>
@@ -235,7 +177,7 @@ export function MedicationScreen() {
               <TouchableOpacity style={[styles.btn, { flex: 1, borderWidth: 1, marginRight: 8 }]} onPress={() => setShowAddModal(false)}>
                 <Text>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.btn, { flex: 1 }]} onPress={addMedicationHandler}>
+              <TouchableOpacity style={[styles.btn, { flex: 1 }]} onPress={addMedication}>
                 <Text style={{ color: 'white' }}>Add</Text>
               </TouchableOpacity>
             </View>
@@ -261,25 +203,9 @@ export function MedicationScreen() {
 
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-    paddingTop: 8, // Reduced from 16 to 8
-    paddingBottom: 40,
-    backgroundColor: colors.background
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8, // Reduced from 12 to 8
-    marginTop: -4,   // Pull the entire header row up
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.text,
-    marginTop: 0, // Removed the negative margin
-  },
+  container: { padding: 16, paddingBottom: 40, backgroundColor: colors.background },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  title: { fontSize: 20, fontWeight: '700', color: colors.text },
   addBtn: { backgroundColor: colors.text, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
   addBtnText: { color: 'white' },
   alert: { backgroundColor: colors.warningLight, padding: 10, borderRadius: 8, marginBottom: 12 },
