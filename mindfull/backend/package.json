@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon index.js",
+    "start": "node index.js",
+    "test-supabase": "node scripts/testSupabase.js",
+    "test-recipes": "node scripts/testRecipeAPI.js"
   },
   "keywords": [],
   "author": "",
@@ -18,9 +21,5 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
-  },
-  "scripts": {
-  "dev": "node index.js",
-  "start": "node index.js"
-}
+  }
 }
