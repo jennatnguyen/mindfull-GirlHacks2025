@@ -64,6 +64,7 @@ const categoryColors = {
     egg: '#eab308',
     grain: '#a855f7',
 };
+
 import { fetchUserRecipes } from '../utils/apiHelpersRecipe'; // <-- Import your helper
 import { supabase } from '../utils/supabase'; // <-- Import your supabase client
 
@@ -85,28 +86,28 @@ export function CookbookScreen() {
         supabase.auth.getUser().then(({ data, error }) => {
             if (data?.user) {
                 setUserId(data.user.id);
-            console.log('Set userId:', data.user.id); // <-- Add this
-        } else {
-            console.log('No user found', error);
-        }
+                console.log('Set userId:', data.user.id); // <-- Add this
+            } else {
+                console.log('No user found', error);
+            }
         });
     }, []);
 
     useEffect(() => {
-    console.log('CookbookScreen useEffect, userId:', userId);
-    if (!userId) return;
-    setLoading(true);
-    fetchUserRecipes(userId)
-        .then(data => {
-            console.log('API data:', data); // <-- Add this
-            const mappedRecipes = (data.recipes || []).map((r: any) => ({
-                ...r,
-                category: r.type,
-            }));
-            console.log('Mapped recipes:', mappedRecipes); // <-- And this
-            setRecipes(mappedRecipes);
-            setLoading(false);
-        });
+        console.log('CookbookScreen useEffect, userId:', userId);
+        if (!userId) return;
+        setLoading(true);
+        fetchUserRecipes(userId)
+            .then(data => {
+                console.log('API data:', data); // <-- Add this
+                const mappedRecipes = (data.recipes || []).map((r: any) => ({
+                    ...r,
+                    category: r.type,
+                }));
+                console.log('Mapped recipes:', mappedRecipes); // <-- And this
+                setRecipes(mappedRecipes);
+                setLoading(false);
+            });
     }, [userId]);
 
     // When a recipe is selected, slide the detail in from the right
