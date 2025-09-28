@@ -6,7 +6,8 @@ import { Home, Pill, Utensils, Brain, Heart, Settings, Clock, BookOpen } from 'l
 import { CookbookScreen } from './components/CookbookScreen';
 import { MedicationScreen } from './components/MedicationScreen';
 import { useSession } from './utils/useSession';
-import { signIn, signUp, signOut } from './utils/auth';
+import { signIn, signUp, signOut, getSession as getAuthSession } from './utils/auth';
+
 
 // Dummy Button and Badge components for demonstration
 const Button = ({ onPress, children }: { onPress: () => void; children: React.ReactNode }) => (
@@ -48,7 +49,7 @@ export default function App() {
 
   // app-level state
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
-  const [userName, setUserName] = useState(user?.email || 'User');
+  const [userName, setUserName] = useState(user?.user_metadata?.display_name || user?.email || 'User');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [currentQuote, setCurrentQuote] = useState(motivationalQuotes[0]);
 
@@ -59,6 +60,10 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState('');
+
+  // force UI into signed-out state until auth subscription fires
+  const [forceSignedOut, setForceSignedOut] = useState(false);
+
 
   const handleAuth = async () => {
     setLoading(true);
@@ -75,9 +80,47 @@ export default function App() {
     setLoading(false);
   };
 
+  
+  // Sign-out wrapper with error handling so button doesn't silently fail
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      // immediately force the UI to the signed-out view; onAuthStateChange will clear this when it fires
+      setForceSignedOut(true);
+      // verify session cleared
+      try {
+        const sess = await getAuthSession();
+        console.log('session after signOut:', sess);
+        if (!sess) {
+          // fallback UI reset until onAuthStateChange fires
+          setUserName('User');
+          setCurrentScreen('home');
+        } else {
+          console.warn('session still present after signOut', sess);
+        }
+      } catch (e) {
+        console.error('Error checking session after signOut', e);
+      }
+    } catch (err: any) {
+      console.error('Sign out failed', err);
+      setError(err?.message || 'Sign out failed');
+    }
+  };
+
+  // Clear the forced sign-out UI when the session updates (e.g., successful sign-in)
   useEffect(() => {
-    if (user?.email) setUserName(user.email);
+    if (session) {
+      setForceSignedOut(false);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    const display = (user as any)?.user_metadata?.display_name;
+    if (display) setUserName(display);
+    else if (user?.email) setUserName(deriveNameFromEmail(user.email));
   }, [user]);
+
+
   // Change image every hour and quote every time (keep hooks above any early returns)
   useEffect(() => {
     const updateContent = () => {
@@ -158,6 +201,56 @@ export default function App() {
     }
   };
 
+  // If there's no session (or we forced signed-out), show the login/signup UI immediately
+  if (!session || forceSignedOut) {
+    return (
+      <View style={styles.loginContainer}>
+        <StatusBar style="auto" />
+        <Text style={styles.headerTitle}>Mindfull</Text>
+        <Text style={styles.loginSubtitle}>{mode === 'login' ? 'Sign in to continue' : 'Create an account'}</Text>
+
+        {mode === 'signup' && (
+          <TextInput
+            placeholder="Full name"
+            value={name}
+            onChangeText={setName}
+            style={styles.input}
+            placeholderTextColor="#6b6b6b"
+          />
+        )}
+
+        <TextInput
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          style={styles.input}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          placeholderTextColor="#6b6b6b"
+        />
+
+        <TextInput
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          style={styles.input}
+          secureTextEntry
+          placeholderTextColor="#6b6b6b"
+        />
+
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+        <TouchableOpacity style={styles.loginButton} onPress={handleAuth} disabled={loading}>
+          <Text style={styles.loginButtonText}>{loading ? 'Working…' : mode === 'login' ? 'Sign in' : 'Create account'}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => setMode(mode === 'login' ? 'signup' : 'login')}>
+          <Text style={styles.switchText}>{mode === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <StatusBar style="auto" />
@@ -170,7 +263,7 @@ export default function App() {
           <Button onPress={() => { /* settings action */ }}>
             <Settings size={20} color={colors.text}/>
           </Button>
-          <Button onPress={signOut}>
+          <Button onPress={handleSignOut}>
             Sign Out
           </Button>
         </View>
@@ -207,9 +300,8 @@ export default function App() {
   );
 }
 
-// LoginScreen moved to ./components/LoginScreen.tsx to avoid hook ordering issues
 
-//---------------------------------------Home Screen---------------------------------------
+// --------------------------------------- Home Screen ---------------------------------------
 
 function HomeScreen({
   userName,
