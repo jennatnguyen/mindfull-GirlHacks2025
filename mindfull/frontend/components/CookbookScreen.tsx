@@ -93,20 +93,24 @@ export function CookbookScreen() {
     }, []);
 
     useEffect(() => {
-    console.log('CookbookScreen useEffect, userId:', userId);
-    if (!userId) return;
-    setLoading(true);
-    fetchUserRecipes(userId)
-        .then(data => {
-            console.log('API data:', data); // <-- Add this
-            const mappedRecipes = (data.recipes || []).map((r: any) => ({
-                ...r,
-                category: r.type,
-            }));
-            console.log('Mapped recipes:', mappedRecipes); // <-- And this
-            setRecipes(mappedRecipes);
-            setLoading(false);
-        });
+        console.log('CookbookScreen useEffect, userId:', userId);
+        if (!userId) return;
+        setLoading(true);
+        fetchUserRecipes(userId)
+            .then(data => {
+                console.log('API data:', data);
+                const mappedRecipes = (data.recipes || []).map((r: any) => ({
+                    ...r,
+                    category: r.type,
+                }));
+                console.log('Mapped recipes:', mappedRecipes);
+                setRecipes(mappedRecipes);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error('Fetch error:', err);
+                setLoading(false);
+            });
     }, [userId]);
 
     // When a recipe is selected, slide the detail in from the right
