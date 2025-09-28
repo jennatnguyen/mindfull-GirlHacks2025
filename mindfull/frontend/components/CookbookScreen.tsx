@@ -13,8 +13,9 @@ import {
 } from 'react-native';
 import { colors } from '../theme';
 import RecipeDetailScreen from './RecipeDetailScreen';
-// Use the CommonJS build of lucide-react-native to avoid Metro ESM resolution issues
-// @ts-ignore: package does not ship typings for the dist/cjs entry; runtime is fine
+import { fetchUserRecipes } from '../utils/apiHelpersRecipe'; // <-- Import your helper
+import { supabase } from '../utils/supabase'; // <-- Import your supabase client
+
 import {
     Search,
     Beef,
@@ -65,6 +66,9 @@ const categoryColors = {
     grain: '#a855f7',
 };
 
+
+
+
 export function CookbookScreen() {
     const [activeTab, setActiveTab] = useState<TabType>('cookbook');
     const [searchQuery, setSearchQuery] = useState('');
@@ -73,6 +77,41 @@ export function CookbookScreen() {
     const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
     const screenWidth = Dimensions.get('window').width;
     const translateX = useRef(new Animated.Value(screenWidth)).current;
+
+    const [recipes, setRecipes] = useState<Recipe[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    // Fetch user ID from Supabase Auth
+    const [userId, setUserId] = useState<string | null>(null);
+
+    useEffect(() => {
+        supabase.auth.getUser().then(({ data, error }) => {
+            if (data?.user) {
+                setUserId(data.user.id);
+                console.log('Set userId:', data.user.id); // <-- Add this
+            } else {
+                console.log('No user found', error);
+            }
+        });
+    }, []);
+
+    useEffect(() => {
+        console.log('CookbookScreen useEffect, userId:', userId);
+        if (!userId) return;
+        setLoading(true);
+        fetchUserRecipes(userId)
+            .then(data => {
+                console.log('API data:', data); // <-- Add this
+                const mappedRecipes = (data.recipes || []).map((r: any) => ({
+                    ...r,
+                    category: r.type,
+                }));
+                console.log('Mapped recipes:', mappedRecipes); // <-- And this
+                setRecipes(mappedRecipes);
+                setLoading(false);
+            });
+    }, [userId]);
+
 
     // When a recipe is selected, slide the detail in from the right
     useEffect(() => {

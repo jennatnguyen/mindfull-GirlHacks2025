@@ -1,13 +1,6 @@
 // API configuration and utilities  
 import { Platform } from 'react-native';
-
-// Optional runtime override for all platforms using Expo public env vars.
-// Example (PowerShell): $env:EXPO_PUBLIC_API_BASE_URL="https://<your-ngrok>.ngrok-free.app" ; npm start
-// Safely read from process.env (some RN environments may not have it fully polyfilled)
-const rawEnvBase = (typeof process !== 'undefined' && (process as any)?.env)
-  ? ((process as any).env.EXPO_PUBLIC_IOS_API_BASE_URL || (process as any).env.EXPO_PUBLIC_API_BASE_URL)
-  : '';
-const ENV_API_BASE = (rawEnvBase || '').toString().trim();
+import { EXPO_PUBLIC_API_BASE_URL } from '@env';
 
 // Helper to normalize base => ensure it ends with '/api'
 function normalizeBaseUrl(base: string): string {
@@ -16,24 +9,27 @@ function normalizeBaseUrl(base: string): string {
   return noTrailing.endsWith('/api') ? noTrailing : `${noTrailing}/api`;
 }
 
-// Use your computer's IP for iOS device (Expo Go can't reach localhost)
-// Decide base URL priority:
-// 1) If EXPO_PUBLIC_* provided, use that for ALL platforms (great with ngrok)
-// 2) Else use sensible platform defaults in dev
-// 3) In prod, point to your hosted API
+// Use EXPO_PUBLIC_API_BASE_URL with platform-specific fallbacks
 export const API_BASE_URL = (() => {
-  const envBase = normalizeBaseUrl(ENV_API_BASE);
+  const envBase = normalizeBaseUrl(EXPO_PUBLIC_API_BASE_URL || '');
+  
   if (__DEV__ && envBase) {
     console.log('[api] Using env API base:', envBase);
     return envBase;
   }
+  
   if (__DEV__) {
     if (Platform.OS === 'android') return 'http://10.0.2.2:3000/api';
     if (Platform.OS === 'web') return 'http://localhost:3000/api';
     return 'http://100.100.67.31:3000/api'; // iOS device - local network IP fallback
   }
+  
   return 'https://your-production-api.com/api';
 })();
+
+// Legacy exports for backward compatibility
+export const RECIPES_API_URL = `${API_BASE_URL.replace('/api', '')}/api/recipes`;
+export const MEDICINE_API_URL = `${API_BASE_URL.replace('/api', '')}/api/medicine`;
 
 // Generic API request function with error handling
 async function apiRequest<T>(
@@ -53,19 +49,19 @@ async function apiRequest<T>(
   
   try {
     const response = await fetch(url, config);
-  console.log('Response status:', response.status);
+    console.log('Response status:', response.status);
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-  console.error('API Error:', errorData);
+      console.error('API Error:', errorData);
       throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
     }
     
     const data = await response.json();
-  console.log('API Response:', data);
+    console.log('API Response:', data);
     return data;
   } catch (error) {
-  console.error('API Request failed:', error);
+    console.error('API Request failed:', error);
     throw error;
   }
 }
@@ -191,7 +187,7 @@ export const medicationAPI = {
   },
 };
 
-// Recipe API types and functions (for when you wire those up later)
+// Recipe API types and functions
 export interface Recipe {
   id: string;
   title: string;
