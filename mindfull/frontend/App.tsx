@@ -1,18 +1,12 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, AppRegistry } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, AppRegistry, Image } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { colors } from './theme';
+// Use the CommonJS build of lucide-react-native to avoid Metro ESM resolution issues
+// @ts-ignore: package does not ship typings for the dist/cjs entry; runtime is fine
+import { Home, Pill, Utensils, Brain, Heart, Settings, Clock, BookOpen } from 'lucide-react-native/dist/cjs/lucide-react-native.js';
 import MindfullMealPlannerScreen from './components/MindfullMealPlannerScreen';
 import MindfullMedicationScreen from './components/MindfullMedicationScreen';
-
-// Dummy icons for demonstration (replace with your icon library or remove if not needed)
-const Home = ({ size = 20 }) => <Text style={{ fontSize: size }}>🏠</Text>;
-const Pill = ({ size = 20 }) => <Text style={{ fontSize: size }}>💊</Text>;
-const Utensils = ({ size = 20 }) => <Text style={{ fontSize: size }}>🍽️</Text>;
-const Brain = ({ size = 20 }) => <Text style={{ fontSize: size }}>🧠</Text>;
-const Heart = ({ size = 20 }) => <Text style={{ fontSize: size }}>❤️</Text>;
-const Settings = ({ size = 20 }) => <Text style={{ fontSize: size }}>⚙️</Text>;
-const Clock = ({ size = 20 }) => <Text style={{ fontSize: size }}>⏰</Text>;
-const BookOpen = ({ size = 20 }) => <Text style={{ fontSize: size }}>📖</Text>;
 
 // Dummy Button and Badge components for demonstration
 const Button = ({ onPress, children }: { onPress: () => void; children: React.ReactNode }) => (
@@ -29,14 +23,57 @@ const Badge = ({ children }: { children: React.ReactNode }) => (
 
 type Screen = 'home' | 'meals' | 'meds';
 
+// Array of motivational images that change every hour
+const motivationalImages = [
+  'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=600&fit=crop', // Chef cat
+  'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=400&h=600&fit=crop', // Meditation cat
+  'https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=400&h=600&fit=crop', // Study cat
+  'https://images.unsplash.com/photo-1596854407944-bf87f6fdd49e?w=400&h=600&fit=crop', // Happy cat
+];
+
+// Array of motivational quotes
+const motivationalQuotes = [
+  "You're doing great! Keep up the healthy habits! 🌟",
+  "Take it one meal, one pill, one moment at a time 💊",
+  "Self-care isn't selfish, it's essential 🧘‍♀️",
+  "Progress, not perfection. You've got this! 💪",
+  "Your health is your wealth 💎",
+  "Small steps lead to big changes 🌱",
+];
+
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
   const [userName, setUserName] = useState('User');
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [currentQuote, setCurrentQuote] = useState(motivationalQuotes[0]);
+
+  // Change image every hour and quote every time
+  useEffect(() => {
+    const updateContent = () => {
+      const hour = new Date().getHours();
+      setCurrentImageIndex(hour % motivationalImages.length);
+      setCurrentQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
+    };
+
+    updateContent(); // Set initial content
+
+    // Update every hour
+    const interval = setInterval(updateContent, 60 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const renderScreen = () => {
     switch (currentScreen) {
       case 'home':
-        return <HomeScreen userName={userName} onNavigate={setCurrentScreen} />;
+        return (
+          <HomeScreen
+            userName={userName}
+            onNavigate={setCurrentScreen}
+            currentImage={motivationalImages[currentImageIndex]}
+            currentQuote={currentQuote}
+          />
+        );
       case 'meals':
         return <MindfullMealPlannerScreen />;
       case 'meds':
@@ -52,12 +89,12 @@ export default function App() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Mindfull</Text>
         <Button onPress={() => { /* settings action */ }}>
-          <Settings size={20} />
+          <Settings size={20} color={colors.text} />
         </Button>
       </View>
 
       {/* Main Content */}
-      <ScrollView style={styles.content}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {renderScreen()}
       </ScrollView>
 
@@ -86,75 +123,36 @@ export default function App() {
   );
 }
 
-function HomeScreen({ userName, onNavigate }: { userName: string; onNavigate: (screen: Screen) => void }) {
+function HomeScreen({
+  userName,
+  onNavigate,
+  currentImage,
+  currentQuote
+}: {
+  userName: string;
+  onNavigate: (screen: Screen) => void;
+  currentImage: string;
+  currentQuote: string;
+}) {
   return (
     <View style={styles.homeContainer}>
+      {/* Welcome Section */}
       <View style={styles.welcomeSection}>
-        <Text style={styles.welcomeTitle}>Hello, {userName}!</Text>
-        <Text style={styles.welcomeSubtitle}>How can we help you today?</Text>
+        <Text style={styles.welcomeTitle}>
+          Welcome, <Text style={styles.welcomeHighlight}>{userName}</Text>!
+        </Text>
+        <Text style={styles.welcomeQuote}>{currentQuote}</Text>
       </View>
 
-      <View style={styles.quickActions}>
-        <QuickActionCard
-          icon={<Pill size={24} />}
-          title="Take Meds"
-          description="Time for your medication"
-          color="#6366f1"
-          onPress={() => { }}
-        />
-        <QuickActionCard
-          icon={<Utensils size={24} />}
-          title="Plan Meals"
-          description="What's for dinner?"
-          color="#06b6d4"
-          onPress={() => { }}
-        />
-        <QuickActionCard
-          icon={<Brain size={24} />}
-          title="Focus Time"
-          description="Start studying"
-          color="#8b5cf6"
-          onPress={() => { }}
-        />
-        <QuickActionCard
-          icon={<Heart size={24} />}
-          title="Mindfulness"
-          description="Take a break"
-          color="#f59e0b"
-          onPress={() => { }}
+      {/* Main Motivational Image Card */}
+      <View style={styles.motivationalCard}>
+        <Image
+          source={{ uri: currentImage }}
+          style={styles.motivationalImage}
+          resizeMode="cover"
         />
       </View>
 
-      <View style={styles.scheduleCard}>
-        <View style={styles.scheduleHeader}>
-          <Clock size={20} />
-          <Text style={styles.scheduleTitle}>Today's Schedule</Text>
-        </View>
-
-        <View style={styles.scheduleItem}>
-          <View style={styles.scheduleItemLeft}>
-            <Pill size={16} />
-            <Text style={styles.scheduleItemText}>Morning Medication</Text>
-          </View>
-          <Badge>9:00 AM</Badge>
-        </View>
-
-        <View style={styles.scheduleItem}>
-          <View style={styles.scheduleItemLeft}>
-            <Utensils size={16} />
-            <Text style={styles.scheduleItemText}>Meal Prep</Text>
-          </View>
-          <Badge>12:00 PM</Badge>
-        </View>
-
-        <View style={styles.scheduleItem}>
-          <View style={styles.scheduleItemLeft}>
-            <BookOpen size={16} />
-            <Text style={styles.scheduleItemText}>Study Session</Text>
-          </View>
-          <Badge>2:00 PM</Badge>
-        </View>
-      </View>
     </View>
   );
 }
@@ -162,25 +160,29 @@ function HomeScreen({ userName, onNavigate }: { userName: string; onNavigate: (s
 function QuickActionCard({
   icon,
   title,
-  description,
   color,
   onPress
 }: {
   icon: React.ReactNode;
   title: string;
-  description: string;
   color: string;
   onPress: () => void;
 }) {
+  const renderedIcon = React.isValidElement(icon)
+    ? React.cloneElement(icon as React.ReactElement<any>, {
+      ...((icon as any).props || {}),
+      color: ((icon as any).props && (icon as any).props.color) || colors.background
+    } as any)
+    : icon;
+
   return (
     <TouchableOpacity
-      style={[styles.quickActionCard, { backgroundColor: color }]}
+      style={[styles.quickActionCardBottom, { backgroundColor: color }]}
       onPress={onPress}
     >
-      <View style={styles.quickActionContent}>
-        {icon}
-        <Text style={styles.quickActionTitle}>{title}</Text>
-        <Text style={styles.quickActionDescription}>{description}</Text>
+      <View style={styles.quickActionContentBottom}>
+        {renderedIcon}
+        <Text style={styles.quickActionTitleBottom}>{title}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -202,8 +204,10 @@ function NavButton({
       style={[styles.navButton, active && styles.navButtonActive]}
       onPress={onPress}
     >
-      {icon}
-      <Text style={styles.navButtonText}>{label}</Text>
+      {React.isValidElement(icon)
+        ? React.cloneElement(icon as React.ReactElement<any>, { color: active ? colors.primary : colors.muted } as any)
+        : icon}
+      <Text style={[styles.navButtonText, { color: active ? colors.primary : colors.muted }]}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -211,20 +215,20 @@ function NavButton({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
     paddingTop: 50, // Account for status bar
+    backgroundColor: colors.background,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
+    color: colors.text,
   },
   content: {
     flex: 1,
@@ -233,7 +237,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   badge: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -244,99 +248,94 @@ const styles = StyleSheet.create({
   bottomNav: {
     flexDirection: 'row',
     borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
-    backgroundColor: '#f9fafb',
+    borderTopColor: colors.border,
+    backgroundColor: colors.background,
+    paddingVertical: 8,
   },
   navButton: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
+    borderRadius: 12,
+    marginHorizontal: 4,
   },
   navButtonActive: {
-    backgroundColor: '#e0e7ff',
+    backgroundColor: colors.primaryLight + '20', // 20% opacity
   },
   navButtonText: {
     fontSize: 12,
     marginTop: 4,
+    fontWeight: '500',
   },
   homeContainer: {
-    padding: 16,
+    flex: 1,
+    padding: 20,
   },
   welcomeSection: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 24,
   },
   welcomeTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-  },
-  welcomeSubtitle: {
-    fontSize: 16,
-    color: '#6b7280',
-  },
-  quickActions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  quickActionCard: {
-    width: '48%',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-  },
-  quickActionContent: {
-    alignItems: 'center',
-  },
-  quickActionTitle: {
-    fontWeight: 'bold',
-    marginTop: 4,
-    color: 'white',
-  },
-  quickActionDescription: {
-    fontSize: 12,
-    color: 'white',
+    color: colors.text,
     textAlign: 'center',
+    marginBottom: 12,
   },
-  scheduleCard: {
-    backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 12,
+  welcomeHighlight: {
+    color: colors.primary,
+  },
+  welcomeQuote: {
+    fontSize: 16,
+    color: colors.muted,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    lineHeight: 22,
+  },
+  motivationalCard: {
+    backgroundColor: colors.cardBg,
+  borderRadius: 20,
+  padding: 14,
+  marginBottom: 36,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 4,
     },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  scheduleHeader: {
+  motivationalImage: {
+    width: '100%',
+    height: 420,
+    borderRadius: 16,
+  },
+  quickActionsBottom: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  scheduleTitle: {
-    fontWeight: 'bold',
-    marginLeft: 8,
-  },
-  scheduleItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 8,
-    backgroundColor: '#f9fafb',
-    borderRadius: 6,
-    marginBottom: 4,
+    marginTop: 'auto',
+    paddingBottom: 16,
   },
-  scheduleItemLeft: {
-    flexDirection: 'row',
+  quickActionCardBottom: {
+    width: '22%',
+    borderRadius: 16,
+    padding: 12,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 80,
   },
-  scheduleItemText: {
-    marginLeft: 8,
+  quickActionContentBottom: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickActionTitleBottom: {
+    fontWeight: '600',
+    marginTop: 8,
+    color: colors.background,
+    fontSize: 12,
+    textAlign: 'center',
   },
 });
 
