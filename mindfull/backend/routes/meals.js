@@ -22,9 +22,24 @@ router.post('/', async (req, res) => {
     const prompt = `Write concise, numbered cooking instructions for a recipe titled "${name}". Keep it short (3-10 steps).`;
     let instructions = await askGemini(prompt);
 
+    // Ask Gemini to categorize the recipe
+    const typePrompt = `Given the recipe title "${name}", categorize it as one of the following types: meat, sweet, vegetarian, vegan, seafood, fruit, egg, or grain. Respond with only the type.`;
+    let type = '';
+    try {
+      type = (await askGemini(typePrompt)).toString().trim().toLowerCase();
+      // Validate type
+      const allowedTypes = ['meat', 'sweet', 'vegetarian', 'vegan', 'seafood', 'fruit', 'egg', 'grain'];
+      if (!allowedTypes.includes(type)) {
+        type = 'uncategorized';
+      }
+    } catch (catErr) {
+      console.error('Gemini error categorizing recipe:', catErr);
+      type = 'uncategorized';
+    }
+
     const { data, error } = await supabase
       .from('recipes')
-      .insert([{ name, instructions, user_id }])
+      .insert([{ name, instructions, user_id, type }])
       .select();
     if (error) {
       console.error('Supabase error:', error);
