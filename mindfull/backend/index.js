@@ -7,7 +7,6 @@ require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 
 const mealRoutes = require('./routes/meals');
 const medRoutes = require('./routes/medicine');
-const recipeRoutes = require('./routes/recipes');
 
 const app = express();
 app.use(cors());
@@ -26,9 +25,8 @@ app.get('/', (req, res) => {
 });
 
 // Routes
-app.use('/api/meals', mealRoutes);
+app.use('/api/recipes', mealRoutes);
 app.use('/api/medicine', medRoutes);
-app.use('/api/recipes', recipeRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

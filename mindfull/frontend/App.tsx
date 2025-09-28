@@ -6,7 +6,8 @@ import { Home, Pill, Utensils, Brain, Heart, Settings, Clock, BookOpen } from 'l
 import { CookbookScreen } from './components/CookbookScreen';
 import { MedicationScreen } from './components/MedicationScreen';
 import { useSession } from './utils/useSession';
-import { signIn, signUp, signOut } from './utils/auth';
+import { signIn, signUp, signOut, getSession as getAuthSession } from './utils/auth';
+const logo = require('./assets/icon.png');
 
 // Dummy Button and Badge components for demonstration
 const Button = ({ onPress, children }: { onPress: () => void; children: React.ReactNode }) => (
@@ -48,7 +49,14 @@ export default function App() {
 
   // app-level state
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
-  const [userName, setUserName] = useState(user?.email || 'User');
+  // helper to make a nicer fallback name from email local-part
+  const deriveNameFromEmail = (email?: string | null) => {
+    if (!email) return 'User';
+    const parts = email.split('@');
+    return parts[0] || email;
+  };
+
+  const [userName, setUserName] = useState(user?.user_metadata?.display_name || deriveNameFromEmail(user?.email));
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [currentQuote, setCurrentQuote] = useState(motivationalQuotes[0]);
 
@@ -59,6 +67,10 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState('');
+
+  // force UI into signed-out state until auth subscription fires
+  const [forceSignedOut, setForceSignedOut] = useState(false);
+
 
   const handleAuth = async () => {
     setLoading(true);
@@ -75,9 +87,47 @@ export default function App() {
     setLoading(false);
   };
 
+  
+  // Sign-out wrapper with error handling so button doesn't silently fail
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      // immediately force the UI to the signed-out view; onAuthStateChange will clear this when it fires
+      setForceSignedOut(true);
+      // verify session cleared
+      try {
+        const sess = await getAuthSession();
+        console.log('session after signOut:', sess);
+        if (!sess) {
+          // fallback UI reset until onAuthStateChange fires
+          setUserName('User');
+          setCurrentScreen('home');
+        } else {
+          console.warn('session still present after signOut', sess);
+        }
+      } catch (e) {
+        console.error('Error checking session after signOut', e);
+      }
+    } catch (err: any) {
+      console.error('Sign out failed', err);
+      setError(err?.message || 'Sign out failed');
+    }
+  };
+
+  // Clear the forced sign-out UI when the session updates (e.g., successful sign-in)
   useEffect(() => {
-    if (user?.email) setUserName(user.email);
+    if (session) {
+      setForceSignedOut(false);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    const display = (user as any)?.user_metadata?.display_name;
+    if (display) setUserName(display);
+    else if (user?.email) setUserName(deriveNameFromEmail(user.email));
   }, [user]);
+
+
   // Change image every hour and quote every time (keep hooks above any early returns)
   useEffect(() => {
     const updateContent = () => {
@@ -149,6 +199,8 @@ export default function App() {
             onNavigate={setCurrentScreen}
             currentImage={motivationalImages[currentImageIndex]}
             currentQuote={currentQuote}
+            onSettings={() => { /* navigate to settings or open modal */ }}
+            onSignOut={handleSignOut}
           />
         );
       case 'meals':
@@ -158,23 +210,68 @@ export default function App() {
     }
   };
 
+  // If there's no session (or we forced signed-out), show the login/signup UI immediately
+  if (!session || forceSignedOut) {
+    return (
+      <View style={styles.loginContainer}>
+        <StatusBar style="auto" />
+        <Text style={styles.headerTitle}>Mindfull</Text>
+        <Text style={styles.loginSubtitle}>{mode === 'login' ? 'Sign in to continue' : 'Create an account'}</Text>
+
+        {mode === 'signup' && (
+          <TextInput
+            placeholder="Full name"
+            value={name}
+            onChangeText={setName}
+            style={styles.input}
+            placeholderTextColor="#6b6b6b"
+          />
+        )}
+
+        <TextInput
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          style={styles.input}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          placeholderTextColor="#6b6b6b"
+        />
+
+        <TextInput
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          style={styles.input}
+          secureTextEntry
+          placeholderTextColor="#6b6b6b"
+        />
+
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+        <TouchableOpacity style={styles.loginButton} onPress={handleAuth} disabled={loading}>
+          <Text style={styles.loginButtonText}>{loading ? 'Working…' : mode === 'login' ? 'Sign in' : 'Create account'}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => setMode(mode === 'login' ? 'signup' : 'login')}>
+          <Text style={styles.switchText}>{mode === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <StatusBar style="auto" />
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Mindfull</Text>
-
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Button onPress={() => { /* settings action */ }}>
-            <Settings size={20} color={colors.text}/>
-          </Button>
-          <Button onPress={signOut}>
-            Sign Out
-          </Button>
-        </View>
-
+        <Image
+          source={logo}
+          style={styles.logoImage}
+          resizeMode="contain"
+        />
+        {/* Header actions removed — moved to footer so they only appear on Home screen */}
       </View>
 
       {/* Main Content */}
@@ -203,24 +300,28 @@ export default function App() {
           onPress={() => setCurrentScreen('meds')}
         />
       </View>
+      {/* footer actions removed (now rendered inside HomeScreen below the image) */}
     </View>
   );
 }
 
-// LoginScreen moved to ./components/LoginScreen.tsx to avoid hook ordering issues
 
-//---------------------------------------Home Screen---------------------------------------
+// --------------------------------------- Home Screen ---------------------------------------
 
 function HomeScreen({
   userName,
   onNavigate,
   currentImage,
-  currentQuote
+  currentQuote,
+  onSettings,
+  onSignOut,
 }: {
   userName: string;
   onNavigate: (screen: Screen) => void;
   currentImage: string;
   currentQuote: string;
+  onSettings: () => void;
+  onSignOut: () => void | Promise<void>;
 }) {
 
   return (
@@ -240,6 +341,18 @@ function HomeScreen({
           style={styles.motivationalImage}
           resizeMode="cover"
         />
+      </View>
+
+      {/* Action buttons below the image (only on Home) */}
+      <View style={styles.footerActionsInScroll}>
+        <TouchableOpacity style={styles.footerButton} onPress={onSettings}>
+          <Settings size={18} color={colors.text} />
+          <Text style={[styles.buttonText, { marginLeft: 8 }]}>Settings</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.footerButton} onPress={onSignOut}>
+          <Text style={styles.buttonText}>Sign Out</Text>
+        </TouchableOpacity>
       </View>
 
     </View>
@@ -306,14 +419,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    paddingTop: 50, // Account for status bar
-    backgroundColor: colors.background,
-  },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -366,20 +471,33 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontWeight: '500',
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    paddingTop: 50,
+    paddingBottom: 4, // Minimal bottom padding
+    backgroundColor: colors.background,
+  },
+
   homeContainer: {
     flex: 1,
     padding: 20,
+    paddingTop: 4, // Minimal top padding
   },
+
   welcomeSection: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
+    marginTop: -4, // Slight negative margin to pull up
   },
   welcomeTitle: {
-    fontSize: 28,
+    fontSize: 34,
     fontWeight: 'bold',
     color: colors.text,
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 15,
   },
   welcomeHighlight: {
     color: colors.primary,
@@ -390,12 +508,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
     lineHeight: 22,
+    marginBottom: 20,
   },
   motivationalCard: {
     backgroundColor: colors.cardBg,
   borderRadius: 20,
   padding: 14,
-  marginBottom: 36,
+  marginBottom: 56,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -481,6 +600,33 @@ const styles = StyleSheet.create({
   loginButtonText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  logoImage: {
+    width: 120,
+    height: 80,
+    // Adjust width/height to fit your design
+  },
+  footerActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  footerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+  },
+  footerActionsInScroll: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 72,
+    marginBottom: 24,
   },
 });
 
