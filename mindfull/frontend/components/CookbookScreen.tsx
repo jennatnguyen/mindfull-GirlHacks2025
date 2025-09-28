@@ -83,11 +83,17 @@ export function CookbookScreen() {
 
     useEffect(() => {
         supabase.auth.getUser().then(({ data, error }) => {
-            if (data?.user) setUserId(data.user.id);
+            if (data?.user) {
+                setUserId(data.user.id);
+            console.log('Set userId:', data.user.id); // <-- Add this
+        } else {
+            console.log('No user found', error);
+        }
         });
     }, []);
 
     useEffect(() => {
+    console.log('CookbookScreen useEffect, userId:', userId);
     if (!userId) return;
     setLoading(true);
     fetchUserRecipes(userId)
