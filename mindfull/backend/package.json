@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "node index.js",
+    "dev": "nodemon index.js",
     "start": "node index.js",
-    "test-supabase": "node scripts/testSupabase.js"
+    "test-supabase": "node scripts/testSupabase.js",
+    "test-recipes": "node scripts/testRecipeAPI.js"
   },
   "keywords": [],
   "author": "",

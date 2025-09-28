@@ -1,17 +1,26 @@
+require('dotenv').config();
 const express = require('express');
-const router = express.Router();
-const generateRecipes = require('../services/recipeGenerator');
+const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
 
-router.post('/search', async (req, res) => {
-  const query = req.body.query;
-  if (!query || typeof query !== 'string') return res.status(400).json({ ok:false, error:'query required' });
-  try {
-    const recipes = await generateRecipes(query, req.body.preferences || {});
-    return res.json({ ok:true, recipes });
-  } catch (err) {
-    console.error('recipe search error', err);
-    return res.status(502).json({ ok:false, error: err.message || 'Upstream error' });
-  }
+const recipesRouter = require('./routes/recipes'); // your file
+
+const app = express();
+app.use(helmet());
+app.use(cors({ origin: true })); // restrict in prod
+app.use(express.json({ limit: '100kb' }));
+app.use(morgan('tiny'));
+
+// mount routes
+app.use('/api/recipes', recipesRouter);
+
+// generic error handler
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(err.status || 500).json({ ok: false, error: err.message || 'server error' });
 });
 
-module.exports = router;
+app.get('/health', (req, res) => res.json({ ok: true }));
+
+app.listen(process.env.PORT || 3000, () => console.log('Server running'));
